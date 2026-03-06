@@ -1,0 +1,214 @@
+import bcrypt from "bcryptjs";
+import crypto from "crypto";
+import {
+  getUserByEmail,
+  getUserById,
+  createUser,
+  updateUserOTP,
+  clearUserOTP,
+  updatePasswordInDB,
+  generateToken,
+  generateVerificationCode,
+  getResetPasswordToken,
+} from "../models/userModel.js";
+import { catchAsyncErrors } from "../middlewares/catchAsyncErrorMiddleware.js";
+import { ErrorHandler } from "../middlewares/errorMiddleware.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import {
+  verificationEmailTemplate,
+  passwordResetTemplate,
+} from "../utils/emailtemplate.js";
+
+// Helper function for cookie options
+const getCookieOptions = () => ({
+  expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
+  httpOnly: true, // Prevents client-side JS from accessing the cookie
+  // secure: process.env.NODE_ENV === "production", // Uncomment when deploying to production
+});
+
+// 1. REGISTER USER
+export const registerUser = catchAsyncErrors(async (req, res, next) => {
+  const { name, email, password, role } = req.body;
+
+  const userExists = await getUserByEmail(email);
+  if (userExists) {
+    return next(new ErrorHandler("User already exists", 400));
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  const userRole = role && ["customer", "provider", "admin"].includes(role) ? role : "customer";
+
+  await createUser(name, email, hashedPassword, userRole);
+
+  const otp = generateVerificationCode();
+  const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+  await updateUserOTP(email, otp, otpExpires);
+
+  const message = verificationEmailTemplate(name, otp);
+
+  try {
+    await sendEmail({ email, subject: "Verify your Account", message });
+
+    res.status(200).json({
+      success: true,
+      message: "Verification code sent to your email.",
+    });
+  } catch (error) {
+    await clearUserOTP(email);
+    return next(new ErrorHandler("Email could not be sent", 500));
+  }
+});
+
+// 2. VERIFY REGISTRATION OTP
+export const verifyOTP = catchAsyncErrors(async (req, res, next) => {
+  const { email, otp } = req.body;
+
+  const user = await getUserByEmail(email);
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  if (user.otp !== otp || new Date(user.otp_expires) < new Date()) {
+    return next(new ErrorHandler("Invalid or expired verification code", 400));
+  }
+
+  await clearUserOTP(email);
+  const token = generateToken(user);
+
+  res
+    .status(200)
+    .cookie("token", token, getCookieOptions())
+    .json({
+      success: true,
+      message: "Account verified successfully",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+});
+
+// 3. LOGIN USER
+export const loginUser = catchAsyncErrors(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  const user = await getUserByEmail(email);
+  if (!user) return next(new ErrorHandler("Invalid email or password", 401));
+
+  if (!user.is_verified)
+    return next(new ErrorHandler("Please verify your email first", 401));
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) return next(new ErrorHandler("Invalid email or password", 401));
+
+  const token = generateToken(user);
+
+  res
+    .status(200)
+    .cookie("token", token, getCookieOptions())
+    .json({
+      success: true,
+      message: "Login successful",
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+});
+
+// 4. FORGOT PASSWORD
+export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
+  const { email } = req.body;
+  const user = await getUserByEmail(email);
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  const { resetToken, hashedToken } = getResetPasswordToken();
+  const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+
+  await updateUserOTP(email, hashedToken, otpExpires);
+
+  const message = passwordResetTemplate(user.name, resetToken);
+
+  try {
+    await sendEmail({ email, subject: "Password Reset Request", message });
+    res.status(200).json({ success: true, message: "Reset token sent to your email." });
+  } catch (error) {
+    await clearUserOTP(email);
+    return next(new ErrorHandler("Email could not be sent", 500));
+  }
+});
+
+// 5. RESET PASSWORD
+export const resetPassword = catchAsyncErrors(async (req, res, next) => {
+  const { email, token, newPassword } = req.body;
+  const user = await getUserByEmail(email);
+
+  if (!user) return next(new ErrorHandler("User not found", 404));
+
+  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
+  if (user.otp !== hashedToken || new Date(user.otp_expires) < new Date()) {
+    return next(new ErrorHandler("Invalid or expired reset token", 400));
+  }
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await updatePasswordInDB(user.id, hashedPassword);
+  await clearUserOTP(email);
+
+  res.status(200).json({
+    success: true,
+    message: "Password reset successfully. You can now log in.",
+  });
+});
+
+// 6. UPDATE PASSWORD (Logged In)
+export const updatePasswordLoggedIn = catchAsyncErrors(async (req, res, next) => {
+  const { oldPassword, newPassword } = req.body;
+  const user = await getUserById(req.user.id);
+
+  const isMatch = await bcrypt.compare(oldPassword, user.password);
+  if (!isMatch) return next(new ErrorHandler("Old password is incorrect", 400));
+
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+  await updatePasswordInDB(user.id, hashedPassword);
+
+  res.status(200).json({ success: true, message: "Password updated successfully" });
+});
+
+
+export const getMe = catchAsyncErrors(async (req, res, next) => {
+  // If the user reaches this point, the `isAuthenticated` middleware 
+  // has already verified their cookie and attached them to req.user!
+  res.status(200).json({
+    success: true,
+    user: {
+      id: req.user.id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+    }
+  });
+});
+
+// 7. LOGOUT
+export const logoutUser = catchAsyncErrors(async (req, res, next) => {
+  res
+    .status(200)
+    .cookie("token", null, {
+      expires: new Date(Date.now()),
+      httpOnly: true,
+    })
+    .json({
+      success: true,
+      message: "Logged out successfully",
+    });
+});
