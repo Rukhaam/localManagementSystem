@@ -38,12 +38,19 @@ export const approveProviderInDB = async (profileId, isApproved) => {
 // 6. Fetch all approved & available providers (For Customers browsing)
 export const getAllApprovedProviders = async (categoryId = null) => {
   let query = `
-    SELECT p.id as profile_id, u.name, u.email, c.name as category_name, p.bio 
-    FROM Provider_Profiles p
-    JOIN Users u ON p.user_id = u.id
-    JOIN Categories c ON p.category_id = c.id
-    WHERE p.is_approved = TRUE AND p.is_available = TRUE
-  `;
+  SELECT 
+    p.id as profile_id, 
+    p.user_id,             
+    p.category_id,        
+    u.name, 
+    u.email, 
+    c.name as category_name, 
+    p.bio 
+  FROM Provider_Profiles p
+  JOIN Users u ON p.user_id = u.id
+  JOIN Categories c ON p.category_id = c.id
+  WHERE p.is_approved = TRUE AND p.is_available = TRUE
+`;
 
   const params = [];
   if (categoryId) {
@@ -52,5 +59,21 @@ export const getAllApprovedProviders = async (categoryId = null) => {
   }
 
   const [rows] = await pool.query(query, params);
+  return rows;
+};
+// 7. Fetch ALL providers for Admin (includes pending/unapproved)
+export const getAllProvidersDB = async () => {
+  const query = `
+    SELECT 
+      p.id as profile_id, 
+      u.name, 
+      u.email, 
+      p.bio, 
+      p.is_approved, 
+      p.is_available 
+    FROM Provider_Profiles p
+    JOIN Users u ON p.user_id = u.id
+  `;
+  const [rows] = await pool.query(query);
   return rows;
 };

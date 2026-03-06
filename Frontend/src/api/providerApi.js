@@ -1,8 +1,25 @@
 import api from './axiosConfig';
 
-// 1. Update the logged-in Provider's profile
+// Fetch the provider's own profile
+export const getProviderProfileAPI = async () => {
+  const response = await api.get('/providers/profile');
+  return response.data;
+};
+
+// Create or update the profile
 export const updateProviderProfileAPI = async (profileData) => {
-  // Assuming your backend will have a PUT route like /api/users/profile or /api/providers/profile
-  const response = await api.put('/users/profile', profileData); 
+  const response = await api.post('/providers/profile', profileData);
+  return response.data;
+};
+
+// Toggle duty status
+export const toggleAvailabilityAPI = async (isAvailable) => {
+  const response = await api.patch('/providers/availability', { isAvailable });
+  return response.data;
+};
+
+// Fetch all available categories from the database
+export const getCategoriesAPI = async () => {
+  const response = await api.get('/categories');
   return response.data;
 };

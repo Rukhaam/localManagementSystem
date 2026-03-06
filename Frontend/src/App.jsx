@@ -74,15 +74,12 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
-
           {/* Customer Routes */}
+          <Route path="/customer/provider/:id" element={<ProviderProfile />} />
+
           <Route element={<ProtectedRoute allowedRoles={["customer"]} />}>
             <Route path="/customer/dashboard" element={<CustomerDashboard />} />
             <Route path="/customer/bookings" element={<MyBookings />} />
-            <Route
-              path="/customer/provider/:id"
-              element={<ProviderProfile />}
-            />
           </Route>
 
           {/* Provider Routes */}

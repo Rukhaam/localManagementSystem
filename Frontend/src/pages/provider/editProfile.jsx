@@ -1,156 +1,146 @@
 import { useState, useEffect } from "react";
-import api from "../../api/axiosConfig"; 
+import { useDispatch, useSelector } from "react-redux";
+import {
+  fetchProviderData,
+  updateProfile,
+  toggleAvailability,
+  clearProviderMessages,
+} from "../../redux/slices/providerSlice";
 
 export default function EditProfile() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [isFetching, setIsFetching] = useState(true);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const dispatch = useDispatch();
 
-  // Form State
+  // Grab state directly from Redux
+  const { profile, categories, isLoading, error, successMessage } = useSelector(
+    (state) => state.provider
+  );
+
+  // Local form state
   const [formData, setFormData] = useState({
     categoryId: "",
     bio: "",
   });
-  
-  // Availability State
-  const [isAvailable, setIsAvailable] = useState(false);
 
-  // 1. FETCH PROFILE ON LOAD
+  // 1. Fetch data on mount
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const response = await api.get('/providers/profile');
-        if (response.data.profile) {
-          setFormData({
-            categoryId: response.data.profile.category_id,
-            bio: response.data.profile.bio
-          });
-          // Assuming your DB returns 1/0 for booleans
-          setIsAvailable(!!response.data.profile.is_available); 
-        }
-      } catch (error) {
-        console.error("Failed to fetch profile");
-      } finally {
-        setIsFetching(false);
-      }
-    };
-    fetchProfile();
-  }, []);
+    dispatch(fetchProviderData());
 
-  // 2. HANDLE FORM INPUTS
+    // Cleanup messages when leaving the page
+    return () => dispatch(clearProviderMessages());
+  }, [dispatch]);
+
+  // 2. Sync Redux profile data into local form once loaded
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        categoryId: profile.category_id || "",
+        bio: profile.bio || "",
+      });
+    }
+  }, [profile]);
+
+  // 3. Handlers
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+    dispatch(clearProviderMessages()); // Clear errors when typing
   };
 
-  // 3. SAVE PROFILE (POST)
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    setMessage({ type: "", text: "" });
-
-    try {
-      const response = await api.post('/providers/profile', formData);
-      setMessage({ type: "success", text: response.data.message });
-    } catch (error) {
-      setMessage({ 
-        type: "error", 
-        text: error.response?.data?.message || "Failed to update profile." 
-      });
-    } finally {
-      setIsLoading(false);
-    }
+    dispatch(updateProfile(formData));
   };
 
-  // 4. TOGGLE AVAILABILITY (PATCH)
-  const handleToggle = async () => {
-    try {
-      const newStatus = !isAvailable;
-      const response = await api.patch('/providers/availability', { isAvailable: newStatus });
-      setIsAvailable(newStatus);
-      setMessage({ type: "success", text: response.data.message });
-    } catch (error) {
-      setMessage({ type: "error", text: "Failed to toggle availability." });
-    }
+  const handleToggle = () => {
+    const isCurrentlyAvailable = !!profile?.is_available;
+    dispatch(toggleAvailability(!isCurrentlyAvailable));
   };
-
-  if (isFetching) return <div className="p-8">Loading profile...</div>;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
-      
-      {/* ========================================== */}
-      {/* TOP CARD: AVAILABILITY TOGGLE              */}
-      {/* ========================================== */}
+      {/* Global Alerts from Redux */}
+      {error && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm font-medium border border-red-200">
+          {error}
+        </div>
+      )}
+      {successMessage && (
+        <div className="bg-green-50 text-green-700 p-4 rounded-lg text-sm font-medium border border-green-200">
+          {successMessage}
+        </div>
+      )}
+
+      {/* AVAILABILITY TOGGLE CARD */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex items-center justify-between">
         <div>
           <h3 className="text-lg font-bold text-gray-800">Duty Status</h3>
           <p className="text-sm text-gray-500">
-            {isAvailable 
-              ? "You are visible to customers and can receive bookings." 
+            {profile?.is_available
+              ? "You are visible to customers and can receive bookings."
               : "You are currently hidden from search results."}
           </p>
         </div>
         <button
           onClick={handleToggle}
-          className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
-            isAvailable ? "bg-green-500" : "bg-gray-300"
+          disabled={!profile} // Disable if they haven't created a profile yet
+          className={`relative inline-flex h-8 w-16 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 ${
+            profile?.is_available ? "bg-green-500" : "bg-gray-300"
           }`}
         >
           <span
             className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform ${
-              isAvailable ? "translate-x-9" : "translate-x-1"
+              profile?.is_available ? "translate-x-9" : "translate-x-1"
             }`}
           />
         </button>
       </div>
 
-      {/* ========================================== */}
-      {/* BOTTOM CARD: PROFILE FORM                  */}
-      {/* ========================================== */}
+      {/* PROFILE FORM CARD */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Edit Provider Profile</h2>
+          <h2 className="text-2xl font-bold text-gray-800">
+            Edit Provider Profile
+          </h2>
           <p className="text-gray-500 text-sm mt-1">
             Complete your profile so Admin can approve you for work!
           </p>
         </div>
 
-        {message.text && (
-          <div className={`p-4 rounded-lg mb-6 text-sm font-medium ${
-            message.type === "success" ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-          }`}>
-            {message.text}
-          </div>
-        )}
-
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Service Category</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Service Category
+            </label>
             <select
               name="categoryId"
               value={formData.categoryId}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white"
+              disabled={isLoading}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none bg-white disabled:bg-gray-50"
               required
             >
-              <option value="" disabled>Select a category</option>
-              
-              {/* CHANGE THESE VALUES TO MATCH YOUR REAL MYSQL IDs! */}
-              <option value="1">Plumbing</option>
-              <option value="2">Electrical</option>
-              <option value="3"> HomeCleaning</option>
-              
+              <option value="" disabled>
+                Select a category
+              </option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>
+                  {cat.name}
+                </option>
+              ))}
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">About You (Bio)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              About You (Bio)
+            </label>
             <textarea
               name="bio"
               value={formData.bio}
               onChange={handleChange}
+              disabled={isLoading}
               rows="4"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+              placeholder="Tell customers about your experience..."
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none disabled:bg-gray-50"
               required
             ></textarea>
           </div>

@@ -4,7 +4,8 @@ import {
     updateProviderProfileInDB,
     toggleAvailabilityInDB,
     approveProviderInDB,
-    getAllApprovedProviders
+    getAllApprovedProviders,
+    getAllProvidersDB
   } from "../models/providerModel.js";
   import { catchAsyncErrors } from "../middlewares/catchAsyncErrorMiddleware.js";
   import { ErrorHandler } from "../middlewares/errorMiddleware.js";
@@ -80,3 +81,12 @@ import {
     const profile = await getProviderByUserId(req.user.id);
     res.status(200).json({ success: true, profile: profile || null });
   });
+  export const getAllProvidersForAdmin = catchAsyncErrors(async (req, res, next) => {
+    const providers = await getAllProvidersDB();
+
+    res.status(200).json({
+        success: true,
+        count: providers.length,
+        providers
+    });
+});

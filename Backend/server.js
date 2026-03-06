@@ -36,13 +36,10 @@ const limiter = rateLimit({
   message: "Too many requests from this IP, please try again in 15 minutes.",
 });
 app.use("/api", limiter);
-
-app.use(
-  cors({
-    origin: process.env.FRONTEND_URL || "http://localhost:5173",
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 
 // 4. Prevent HTTP Parameter Pollution
 app.use(hpp());
@@ -53,9 +50,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ROUTES
+app.use("/api/providers", providerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
-app.use("/api/providers", providerRoutes);
+
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
 
