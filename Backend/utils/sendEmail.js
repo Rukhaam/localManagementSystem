@@ -1,19 +1,20 @@
 import nodemailer from "nodemailer";
+import dns from "dns";
 import dotenv from "dotenv";
 
 dotenv.config();
 
+
+dns.setDefaultResultOrder("ipv4first");
+
 export const sendEmail = async (options) => {
+
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",    // Hardcode this to avoid DNS confusion
-    port: 465,                 // Standard SSL port
-    secure: true,              // Use SSL
+    service: "gmail", 
     auth: {
       user: process.env.SMTP_MAIL,
       pass: process.env.SMTP_PASSWORD,
     },
-    // 🌟 THE MAGIC FIX: Force Node to use IPv4 instead of IPv6!
-    family: 4, 
   });
 
   const mailOptions = {
