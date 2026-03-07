@@ -5,20 +5,20 @@ export const insertBooking = async (
   customerId,
   providerId,
   categoryId,
-  phoneNumber, // 🌟 ADDED HERE
+  phoneNumber, 
   address,
   scheduledDate,
   notes
 ) => {
   const query = `
-    INSERT INTO Bookings (customer_id, provider_id, category_id, phone_number, address, scheduled_date, notes, status) 
+    INSERT INTO bookings (customer_id, provider_id, category_id, phone_number, address, scheduled_date, notes, status) 
     VALUES (?, ?, ?, ?, ?, ?, ?, 'Requested')
   `;
   const [result] = await pool.query(query, [
     customerId,
     providerId,
     categoryId,
-    phoneNumber, // 🌟 ADDED HERE
+    phoneNumber, 
     address,
     scheduledDate,
     notes,
@@ -28,14 +28,14 @@ export const insertBooking = async (
 
 // 2. Get a booking by ID
 export const getBookingById = async (bookingId) => {
-  const query = "SELECT * FROM Bookings WHERE id = ?";
+  const query = "SELECT * FROM bookings WHERE id = ?";
   const [rows] = await pool.query(query, [bookingId]);
   return rows[0];
 };
 
 // 3. Update Status
 export const updateBookingStatusInDB = async (bookingId, status) => {
-  const query = "UPDATE Bookings SET status = ? WHERE id = ?";
+  const query = "UPDATE bookings SET status = ? WHERE id = ?";
   await pool.query(query, [status, bookingId]);
 };
 
@@ -46,7 +46,7 @@ export const completeBookingInDB = async (
   afterImageUrl
 ) => {
   const query =
-    "UPDATE Bookings SET status = 'Completed', before_image_url = ?, after_image_url = ? WHERE id = ?";
+    "UPDATE bookings SET status = 'Completed', before_image_url = ?, after_image_url = ? WHERE id = ?";
   await pool.query(query, [beforeImageUrl, afterImageUrl, bookingId]);
 };
 
@@ -59,10 +59,10 @@ export const getUserBookings = async (userId, role) => {
            c.name as category_name, 
            cust.name as customer_name, 
            prov.name as provider_name
-    FROM Bookings b
-    JOIN Categories c ON b.category_id = c.id
-    JOIN Users cust ON b.customer_id = cust.id
-    JOIN Users prov ON b.provider_id = prov.id
+    FROM bookings b
+    JOIN categories c ON b.category_id = c.id
+    JOIN users cust ON b.customer_id = cust.id
+    JOIN users prov ON b.provider_id = prov.id
     WHERE b.${column} = ?
     ORDER BY b.scheduled_date DESC
   `;
