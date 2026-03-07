@@ -1,5 +1,4 @@
 import bcrypt from "bcryptjs";
-import crypto from "crypto";
 import {
   getUserByEmail,
   getUserById,
@@ -9,7 +8,6 @@ import {
   updatePasswordInDB,
   generateToken,
   generateVerificationCode,
-  getResetPasswordToken,
 } from "../models/userModel.js";
 import { catchAsyncErrors } from "../middlewares/catchAsyncErrorMiddleware.js";
 import { ErrorHandler } from "../middlewares/errorMiddleware.js";
@@ -20,19 +18,14 @@ import {
 } from "../utils/emailtemplate.js";
 
 // Helper function for cookie options
-
 const getCookieOptions = () => ({
   expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
   httpOnly: true,
   secure: true,   
   sameSite: "none",  
 });
+
 // 1. REGISTER USER
-try {
-  
-} catch (error) {
-  
-}
 export const registerUser = catchAsyncErrors(async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
@@ -62,9 +55,9 @@ export const registerUser = catchAsyncErrors(async (req, res, next) => {
       message: "Verification code sent to your email.",
     });
   } catch (error) {
-    console.error("🚨 RAW NODEMAILER ERROR:", error);
+    console.error("🚨 EMAIL ERROR:", error);
     await clearUserOTP(email);
-    return next(new ErrorHandler("Email could not be sent", 500),);
+    return next(new ErrorHandler("Email could not be sent", 500));
   }
 });
 
@@ -134,17 +127,21 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
 
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  const { resetToken, hashedToken } = getResetPasswordToken();
-  const otpExpires = new Date(Date.now() + 15 * 60 * 1000);
+  // 🌟 Generates the 6-digit code
+  const otp = generateVerificationCode(); 
+  const otpExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-  await updateUserOTP(email, hashedToken, otpExpires);
+  // Saves the 6-digit code to DB
+  await updateUserOTP(email, otp, otpExpires);
 
-  const message = passwordResetTemplate(user.name, resetToken);
+  // Uses the 6-digit code in the email template
+  const message = passwordResetTemplate(user.name, otp);
 
   try {
-    await sendEmail({ email, subject: "Password Reset Request", message });
-    res.status(200).json({ success: true, message: "Reset token sent to your email." });
+    await sendEmail({ email, subject: "Password Reset Code", message });
+    res.status(200).json({ success: true, message: "Reset code sent to your email." });
   } catch (error) {
+    console.error("🚨 EMAIL ERROR:", error);
     await clearUserOTP(email);
     return next(new ErrorHandler("Email could not be sent", 500));
   }
@@ -157,10 +154,9 @@ export const resetPassword = catchAsyncErrors(async (req, res, next) => {
 
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
-
-  if (user.otp !== hashedToken || new Date(user.otp_expires) < new Date()) {
-    return next(new ErrorHandler("Invalid or expired reset token", 400));
+  // 🌟 Directly compares the 6-digit token to the user's saved OTP
+  if (user.otp !== token || new Date(user.otp_expires) < new Date()) {
+    return next(new ErrorHandler("Invalid or expired reset code", 400));
   }
 
   const salt = await bcrypt.genSalt(10);
@@ -191,7 +187,7 @@ export const updatePasswordLoggedIn = catchAsyncErrors(async (req, res, next) =>
   res.status(200).json({ success: true, message: "Password updated successfully" });
 });
 
-
+// GET CURRENT USER
 export const getMe = catchAsyncErrors(async (req, res, next) => {
   // If the user reaches this point, the `isAuthenticated` middleware 
   // has already verified their cookie and attached them to req.user!

@@ -29,6 +29,10 @@ export const checkAuthAPI = async () => {
     return response.data;
   };// Add this to your authApi.js file
 export const logoutAPI = async () => {
-  const response = await api.get('/auth/logout'); // Use .post() if your backend route is a POST request
+  const response = await api.get('/auth/logout'); 
+  return response.data;
+};export const resetPasswordAPI = async (data) => {
+
+  const response = await api.post('/auth/reset-password', data); 
   return response.data;
 };
