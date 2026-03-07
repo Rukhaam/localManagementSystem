@@ -1,24 +1,15 @@
 import nodemailer from "nodemailer";
-import dns from "dns";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 export const sendEmail = async (options) => {
+//   console.log("Using Email:", process.env.SMTP_MAIL);
+//     console.log("Password length:", process.env.SMTP_PASSWORD ? process.env.SMTP_PASSWORD.length : "UNDEFINED!");
   const transporter = nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,             
-    secure: false,        
-    requireTLS: true,       
+    host: process.env.SMTP_HOST,
+    port: process.env.SMTP_PORT,
+    service: process.env.SMTP_SERVICE,
     auth: {
       user: process.env.SMTP_MAIL,
-      pass: process.env.SMTP_PASSWORD, 
-    },
-
-    lookup: (hostname, options, callback) => {
-      dns.lookup(hostname, { family: 4 }, (err, address, family) => {
-        callback(err, address, family);
-      });
+      pass: process.env.SMTP_PASSWORD,
     },
   });
 
@@ -26,7 +17,7 @@ export const sendEmail = async (options) => {
     from: process.env.SMTP_MAIL,
     to: options.email,
     subject: options.subject,
-    html: options.message,
+    html: options.html,
   };
 
   await transporter.sendMail(mailOptions);
