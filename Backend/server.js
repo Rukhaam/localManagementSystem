@@ -11,7 +11,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
-import adminRoutes from './routes/adminRoutes.js';
+import adminRoutes from "./routes/adminRoutes.js";
 
 import { errorMiddleware } from "./middlewares/errorMiddleware.js";
 
@@ -32,15 +32,20 @@ app.use(helmet());
 
 // 2. Rate Limiting
 const limiter = rateLimit({
-  windowMs: 60* 60 * 1000, // 15 minutes
+  windowMs: 60 * 60 * 1000, // 15 minutes
   max: 10000,
   message: "Too many requests from this IP, please try again in 15 minutes.",
 });
 app.use("/api", limiter);
-app.use(cors({
-  origin: "http://localhost:5173",
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: [
+      "http://localhost:5173",
+      process.env.FRONTEND_URL, // 🌟 ADDED THIS!
+    ],
+    credentials: true,
+  })
+);
 
 // 4. Prevent HTTP Parameter Pollution
 app.use(hpp());
@@ -51,7 +56,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ROUTES
-app.use('/api/admin', adminRoutes);
+app.use("/api/admin", adminRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -67,10 +72,10 @@ app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 
-if (process.env.NODE_ENV !== 'test') {
-    app.listen(PORT, () => {
-        console.log(`Server is running securely on port ${PORT}`);
-    });
+if (process.env.NODE_ENV !== "test") {
+  app.listen(PORT, () => {
+    console.log(`Server is running securely on port ${PORT}`);
+  });
 }
 
 export default app;
