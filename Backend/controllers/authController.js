@@ -28,6 +28,11 @@ const getCookieOptions = () => ({
   sameSite: "none",  
 });
 // 1. REGISTER USER
+try {
+  
+} catch (error) {
+  
+}
 export const registerUser = catchAsyncErrors(async (req, res, next) => {
   const { name, email, password, role } = req.body;
 
@@ -57,8 +62,9 @@ export const registerUser = catchAsyncErrors(async (req, res, next) => {
       message: "Verification code sent to your email.",
     });
   } catch (error) {
+    console.error("🚨 RAW NODEMAILER ERROR:", error);
     await clearUserOTP(email);
-    return next(new ErrorHandler("Email could not be sent", 500));
+    return next(new ErrorHandler("Email could not be sent", 500),);
   }
 });
 
