@@ -24,6 +24,7 @@ if (!process.env.JWT_SECRET) {
 }
 
 const app = express();
+app.set("trust proxy", 1);
 
 //  SECURITY MIDDLEWARE WAREHOUSE
 
@@ -41,7 +42,7 @@ app.use(
   cors({
     origin: [
       "http://localhost:5173",
-      process.env.FRONTEND_URL, // 🌟 ADDED THIS!
+      process.env.FRONTEND_URL, 
     ],
     credentials: true,
   })
@@ -49,6 +50,7 @@ app.use(
 
 // 4. Prevent HTTP Parameter Pollution
 app.use(hpp());
+
 
 // STANDARD MIDDLEWARE
 app.use(express.json());
