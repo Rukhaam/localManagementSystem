@@ -1,17 +1,19 @@
 import nodemailer from "nodemailer";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 export const sendEmail = async (options) => {
   const transporter = nodemailer.createTransport({
-    host: process.env.SMTP_HOST,
-    port: process.env.SMTP_PORT,
-    service: process.env.SMTP_SERVICE,
+    host: "smtp.gmail.com",    // Hardcode this to avoid DNS confusion
+    port: 465,                 // Standard SSL port
+    secure: true,              // Use SSL
     auth: {
       user: process.env.SMTP_MAIL,
       pass: process.env.SMTP_PASSWORD,
     },
-    tls: {
-      rejectUnauthorized: false
-    }
+    // 🌟 THE MAGIC FIX: Force Node to use IPv4 instead of IPv6!
+    family: 4, 
   });
 
   const mailOptions = {
