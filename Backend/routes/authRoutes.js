@@ -7,12 +7,10 @@ import {
   forgotPassword,
   resetPassword,
   updatePasswordLoggedIn,
-
   logoutUser,
 } from "../controllers/authController.js";
 import { isAuthenticated } from "../middlewares/authMiddleware.js";
 
-// Import the validator engine and the specific rules!
 import {
   validateRequest,
   registerRules,
@@ -21,11 +19,10 @@ import {
 
 const router = express.Router();
 
-
 router.post("/register", registerRules, validateRequest, registerUser);
 router.post("/login", loginRules, validateRequest, loginUser);
 
-router.get('/me', isAuthenticated, getMe);
+router.get("/me", isAuthenticated, getMe);
 router.post("/verify-otp", verifyOTP);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password", resetPassword);

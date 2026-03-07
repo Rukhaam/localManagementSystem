@@ -1,22 +1,24 @@
 import pool from "../config/db.js";
 
-// 1. Create a new booking request
+// 1. Create a new booking request (🌟 NOW INCLUDES PHONE NUMBER)
 export const insertBooking = async (
   customerId,
   providerId,
   categoryId,
+  phoneNumber, // 🌟 ADDED HERE
   address,
   scheduledDate,
   notes
 ) => {
   const query = `
-    INSERT INTO Bookings (customer_id, provider_id, category_id, address, scheduled_date, notes, status) 
-    VALUES (?, ?, ?, ?, ?, ?, 'Requested')
+    INSERT INTO Bookings (customer_id, provider_id, category_id, phone_number, address, scheduled_date, notes, status) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'Requested')
   `;
   const [result] = await pool.query(query, [
     customerId,
     providerId,
     categoryId,
+    phoneNumber, // 🌟 ADDED HERE
     address,
     scheduledDate,
     notes,

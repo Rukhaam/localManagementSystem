@@ -11,6 +11,7 @@ import categoryRoutes from "./routes/categoryRoutes.js";
 import providerRoutes from "./routes/providerRoutes.js";
 import bookingRoutes from "./routes/bookingRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
+import adminRoutes from './routes/adminRoutes.js';
 
 import { errorMiddleware } from "./middlewares/errorMiddleware.js";
 
@@ -31,8 +32,8 @@ app.use(helmet());
 
 // 2. Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100,
+  windowMs: 60* 60 * 1000, // 15 minutes
+  max: 10000,
   message: "Too many requests from this IP, please try again in 15 minutes.",
 });
 app.use("/api", limiter);
@@ -50,6 +51,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // ROUTES
+app.use('/api/admin', adminRoutes);
 app.use("/api/providers", providerRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/categories", categoryRoutes);
@@ -61,12 +63,10 @@ app.get("/", (req, res) => {
   res.send("Local Services Booking API is running securely...");
 });
 
-// Global Error Handler
 app.use(errorMiddleware);
 
 const PORT = process.env.PORT || 5000;
 
-// Only start the server if we are NOT running tests
 if (process.env.NODE_ENV !== 'test') {
     app.listen(PORT, () => {
         console.log(`Server is running securely on port ${PORT}`);

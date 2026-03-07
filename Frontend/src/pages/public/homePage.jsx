@@ -17,18 +17,23 @@ export default function Home() {
   // FAQ State
   const [activeFaq, setActiveFaq] = useState(null);
 
-  // 1. Fetch data on mount
+  // 1. Fetch data on mount (🌟 conditionally!)
   useEffect(() => {
-    dispatch(fetchCategories());
-    dispatch(fetchActiveProviders("")); // Fetch all providers initially
-  }, [dispatch]);
+    if (categories.length === 0) {
+      dispatch(fetchCategories());
+    }
+    if (providers.length === 0) {
+      dispatch(fetchActiveProviders("")); // Fetch all providers initially
+    }
+  }, [dispatch, categories.length, providers.length]);
 
   // 2. Handle Category Filter Click
   const handleCategoryClick = (categoryId) => {
     // If they click the already selected category, unselect it (show all)
     const newCategoryId = selectedCategoryId === categoryId ? "" : categoryId;
+
+    // 🌟 ONLY update the UI state, DO NOT call the API here!
     dispatch(setSelectedCategory(newCategoryId));
-    dispatch(fetchActiveProviders(newCategoryId));
 
     // Smooth scroll down to the providers section
     setTimeout(() => {
@@ -57,9 +62,15 @@ export default function Home() {
     },
   ];
 
+  // 🌟 ZERO-API FILTERING: Filter the list locally in the browser
+  const displayedProviders = selectedCategoryId
+    ? providers.filter(
+        (provider) => provider.category_id === selectedCategoryId
+      )
+    : providers;
+
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 w-full">
-      {/* Inline style for smooth Marquee animation */}
       {/* Inline style for smooth Left-to-Right Marquee animation */}
       <style>{`
         @keyframes marquee-reverse {
@@ -120,8 +131,10 @@ export default function Home() {
         </div>
       </section>
 
-
-      <div className="relative bg-gray-900 overflow-hidden py-6 border-y border-gray-800 shadow-2xl">
+      {/* ========================================== */}
+      {/* 2. SERVICES MARQUEE                        */}
+      {/* ========================================== */}
+      <div className="relative bg-gray-900 overflow-hidden py-6 border-y border-gray-800 shadow-2xl" >
         {/* Left and Right Gradient Fades for a seamless look */}
         <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none"></div>
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none"></div>
@@ -279,7 +292,7 @@ export default function Home() {
             </div>
           )}
 
-          {isLoading ? (
+          {isLoading && providers.length === 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {[1, 2, 3].map((n) => (
                 <div
@@ -288,7 +301,7 @@ export default function Home() {
                 ></div>
               ))}
             </div>
-          ) : providers.length === 0 ? (
+          ) : displayedProviders.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
               <div className="text-4xl mb-3">🔍</div>
               <h3 className="text-lg font-bold text-gray-800">
@@ -300,7 +313,8 @@ export default function Home() {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {providers.map((provider) => (
+              {/* 🌟 MAPPED OVER THE FILTERED ARRAY HERE */}
+              {displayedProviders.map((provider) => (
                 <div
                   key={provider.profile_id}
                   className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col hover:shadow-lg transition-shadow"

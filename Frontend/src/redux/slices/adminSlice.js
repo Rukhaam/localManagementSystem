@@ -4,7 +4,10 @@ import {
   approveProviderAPI,
   createCategoryAPI,
   deleteCategoryAPI,
+  getAllUsersAPI,
+  getAllBookingsAPI,
 } from "../../api/adminApi";
+import { fetchCategories } from "./exploreSlice";
 
 export const fetchAllProviders = createAsyncThunk(
   "admin/fetchAllProviders",
@@ -39,7 +42,7 @@ export const createCategory = createAsyncThunk(
   async (categoryData, { dispatch, rejectWithValue }) => {
     try {
       const response = await createCategoryAPI(categoryData);
-      dispatch(fetchCategories()); // Refresh the public category list
+      dispatch(fetchCategories());
       return response.message;
     } catch (error) {
       return rejectWithValue(
@@ -54,7 +57,7 @@ export const deleteCategory = createAsyncThunk(
   async (id, { dispatch, rejectWithValue }) => {
     try {
       const response = await deleteCategoryAPI(id);
-      dispatch(fetchCategories()); // Refresh the public category list
+      dispatch(fetchCategories());
       return response.message;
     } catch (error) {
       return rejectWithValue(
@@ -64,10 +67,40 @@ export const deleteCategory = createAsyncThunk(
   }
 );
 
+export const fetchAllUsers = createAsyncThunk(
+  "admin/fetchAllUsers",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getAllUsersAPI();
+      return response.users || response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to load users"
+      );
+    }
+  }
+);
+
+export const fetchAllBookings = createAsyncThunk(
+  "admin/fetchAllBookings",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await getAllBookingsAPI();
+      return response.bookings || response;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to load bookings"
+      );
+    }
+  }
+);
+
 const adminSlice = createSlice({
   name: "admin",
   initialState: {
     providers: [],
+    users: [],
+    allBookings: [],
     isLoading: false,
     error: null,
     successMessage: null,
@@ -78,14 +111,9 @@ const adminSlice = createSlice({
       state.successMessage = null;
     },
   },
-  reducers: {
-    clearAdminMessages: (state) => {
-      state.error = null;
-      state.successMessage = null;
-    },
-  },
   extraReducers: (builder) => {
     builder
+      // Providers
       .addCase(fetchAllProviders.pending, (state) => {
         state.isLoading = true;
       })
@@ -104,6 +132,7 @@ const adminSlice = createSlice({
             : 0;
         }
       })
+      // Categories
       .addCase(createCategory.pending, (state) => {
         state.isLoading = true;
       })
@@ -117,6 +146,28 @@ const adminSlice = createSlice({
       })
       .addCase(deleteCategory.fulfilled, (state, action) => {
         state.successMessage = action.payload;
+      })
+      .addCase(fetchAllUsers.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchAllUsers.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.users = action.payload;
+      })
+      .addCase(fetchAllUsers.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchAllBookings.pending, (state) => {
+        state.isLoading = true;
+      })
+      .addCase(fetchAllBookings.fulfilled, (state, action) => {
+        state.isLoading = false;
+        state.allBookings = action.payload;
+      })
+      .addCase(fetchAllBookings.rejected, (state, action) => {
+        state.isLoading = false;
+        state.error = action.payload;
       });
   },
 });

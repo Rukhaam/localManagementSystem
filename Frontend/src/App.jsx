@@ -28,6 +28,8 @@ import AdminDashboard from "./pages/admin/adminDashBoard";
 import ApproveProviders from "./pages/admin/approveProviders";
 import ManageCategories from "./pages/admin/managerCategories";
 
+import ScrollToTop from "./hooks/scrollToTopHook";
+
 function App() {
   const dispatch = useDispatch();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -36,13 +38,10 @@ function App() {
     const verifySession = async () => {
       try {
         const response = await checkAuthAPI();
-        // The cookie is valid! Save the user to Redux.
         dispatch(setCredentials(response.user));
       } catch (error) {
-        // No valid cookie, or it expired. Ensure Redux is cleared.
         dispatch(logout());
       } finally {
-        // Stop the loading screen
         setIsCheckingAuth(false);
       }
     };
@@ -50,7 +49,6 @@ function App() {
     verifySession();
   }, [dispatch]);
 
-  // Show a full-screen spinner while we check the cookie
   if (isCheckingAuth) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -62,12 +60,9 @@ function App() {
   }
 
   return (
-    // ... your other imports ...
-
-    // Inside your App component's return statement:
     <BrowserRouter>
+      <ScrollToTop></ScrollToTop>
       <Routes>
-        {/* 🌟 THIS WRAPS EVERY SINGLE PAGE IN OUR LAYOUT 🌟 */}
         <Route element={<MainLayout />}>
           {/* Public Routes */}
           <Route path="/" element={<Home />} />

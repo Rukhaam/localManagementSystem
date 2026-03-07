@@ -29,7 +29,6 @@ export default function EditProfile() {
     return () => dispatch(clearProviderMessages());
   }, [dispatch]);
 
-  // 2. Sync Redux profile data into local form once loaded
   useEffect(() => {
     if (profile) {
       setFormData({
@@ -42,7 +41,7 @@ export default function EditProfile() {
   // 3. Handlers
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
-    dispatch(clearProviderMessages()); // Clear errors when typing
+    dispatch(clearProviderMessages()); 
   };
 
   const handleSubmit = (e) => {

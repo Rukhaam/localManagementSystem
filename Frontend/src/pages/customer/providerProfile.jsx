@@ -32,7 +32,9 @@ export default function ProviderProfile() {
     isLoading: reviewsLoading,
   } = useSelector((state) => state.reviews);
 
+  // 🌟 UPDATED STATE TO INCLUDE PHONE NUMBER
   const [formData, setFormData] = useState({
+    phoneNumber: "", // 🌟 Added
     address: "",
     scheduledDate: "",
     notes: "",
@@ -61,6 +63,7 @@ export default function ProviderProfile() {
     const bookingPayload = {
       providerId: provider.user_id,
       categoryId: provider.category_id,
+      phoneNumber: formData.phoneNumber, // 🌟 Sent to Redux payload
       address: formData.address,
       scheduledDate: formData.scheduledDate,
       notes: formData.notes,
@@ -68,7 +71,7 @@ export default function ProviderProfile() {
 
     dispatch(requestBooking(bookingPayload)).then((res) => {
       if (!res.error) {
-        setFormData({ address: "", scheduledDate: "", notes: "" });
+        setFormData({ phoneNumber: "", address: "", scheduledDate: "", notes: "" });
       }
     });
   };
@@ -77,7 +80,6 @@ export default function ProviderProfile() {
     return "★★★★★".slice(0, rating) + "☆☆☆☆☆".slice(0, 5 - rating);
   };
 
-  // 🌟 FIX: Accurately calculate today's date in the LOCAL timezone, not UTC
   const getLocalTodayString = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -249,6 +251,23 @@ export default function ProviderProfile() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5">
+                  
+                  {/* 🌟 NEW: Phone Number Input */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Contact Phone Number
+                    </label>
+                    <input
+                      type="tel"
+                      name="phoneNumber"
+                      value={formData.phoneNumber}
+                      onChange={handleChange}
+                      required
+                      placeholder="123-456-7890"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                    />
+                  </div>
+
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Service Address
@@ -264,7 +283,6 @@ export default function ProviderProfile() {
                     />
                   </div>
                   
-                  {/* 🌟 IMPROVED DATE PICKER UI */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">
                       Preferred Date
@@ -279,7 +297,6 @@ export default function ProviderProfile() {
                         min={getLocalTodayString()} 
                         className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 cursor-pointer appearance-none transition-shadow"
                       />
-                      {/* Optional: Add a custom calendar icon to overlay on browsers that don't show it nicely */}
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>

@@ -20,8 +20,30 @@ export default function ProviderDashboard() {
   const activeJobs = bookings.filter(b => ["Confirmed", "In-progress"].includes(b.status)).length;
   const completedJobs = bookings.filter(b => b.status === "Completed").length;
 
+  // 🌟 HELPER FUNCTION: Safe Date Sorting (Prevents crashes on Invalid Dates)
+  const safeGetTime = (dateStr) => {
+    if (!dateStr) return 0;
+    const d = new Date(dateStr);
+    return isNaN(d.getTime()) ? 0 : d.getTime();
+  };
+
+  // 🌟 HELPER FUNCTION: Safe Date Formatter (UI)
+  const formatDate = (dateString) => {
+    if (!dateString) return "No Date Set";
+    const date = new Date(dateString);
+    if (isNaN(date.getTime())) return "Date Pending"; 
+    
+    return date.toLocaleDateString("en-US", {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  // 🌟 FIX: Safe sorting looking for both camelCase and snake_case
   const recentBookings = [...bookings]
-    .sort((a, b) => new Date(b.scheduledDate) - new Date(a.scheduledDate))
+    .sort((a, b) => safeGetTime(b.scheduledDate || b.scheduled_date) - safeGetTime(a.scheduledDate || a.scheduled_date))
     .slice(0, 5);
 
   if (isLoading) {
@@ -80,7 +102,8 @@ export default function ProviderDashboard() {
               <li key={booking.id} className="px-6 py-4 hover:bg-gray-50 transition-colors flex items-center justify-between">
                 <div>
                   <p className="text-sm font-bold text-gray-800">Booking #{booking.id}</p>
-                  <p className="text-sm text-gray-500">Scheduled: {new Date(booking.scheduledDate).toLocaleDateString()}</p>
+                  {/* 🌟 FIX: Safe date formatting looking for both casing styles */}
+                  <p className="text-sm text-gray-500">Scheduled: {formatDate(booking.scheduledDate || booking.scheduled_date)}</p>
                 </div>
                 <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
                   booking.status === 'Requested' ? 'bg-blue-100 text-blue-700' :

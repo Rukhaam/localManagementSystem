@@ -10,7 +10,7 @@ export default function ManageJobs() {
   const [activeTab, setActiveTab] = useState("requests"); 
   const [completingJobId, setCompletingJobId] = useState(null); 
   const [files, setFiles] = useState({ beforeImage: null, afterImage: null });
-  const [uploadError, setUploadError] = useState(""); // 🌟 New state for validation errors
+  const [uploadError, setUploadError] = useState(""); 
 
   useEffect(() => {
     dispatch(fetchMyBookings());
@@ -32,9 +32,8 @@ export default function ManageJobs() {
 
   const handleCompleteSubmit = (e) => {
     e.preventDefault();
-    setUploadError(""); // Clear previous errors
+    setUploadError("");
 
-    // 🌟 FRONTEND VALIDATION: Ensure BOTH images are provided
     if (!files.beforeImage || !files.afterImage) {
       setUploadError("Please upload both a Before and After image to complete the job.");
       return;
@@ -52,7 +51,6 @@ export default function ManageJobs() {
     });
   };
 
-  // 🌟 HELPER FUNCTION: Safe Date Formatter
   const formatDate = (dateString) => {
     if (!dateString) return "No Date Set";
     const date = new Date(dateString);
@@ -122,13 +120,20 @@ export default function ManageJobs() {
                   </span>
                 </div>
                 
-                {/* 🌟 APPLIED FIX: Using || for snake_case */}
-                <p className="text-sm text-gray-600"><strong>Date:</strong> {formatDate(job.scheduledDate || job.scheduled_date)}</p>
-                <p className="text-sm text-gray-600"><strong>Address:</strong> {job.address}</p>
-                {job.notes && <p className="text-sm text-gray-600"><strong>Notes:</strong> {job.notes}</p>}
+                <p className="text-sm text-gray-600"><strong>📅 Date:</strong> {formatDate(job.scheduledDate || job.scheduled_date)}</p>
+                <p className="text-sm text-gray-600"><strong>📍 Address:</strong> {job.address}</p>
+                
+                {/* 🌟 NEW: Renders Clickable Phone Number if it exists */}
+                {job.phone_number && (
+                  <p className="text-sm text-gray-600">
+                    <strong>📞 Contact:</strong> <a href={`tel:${job.phone_number}`} className="text-blue-600 hover:underline">{job.phone_number}</a>
+                  </p>
+                )}
+
+                {job.notes && <p className="text-sm text-gray-600"><strong>📝 Notes:</strong> {job.notes}</p>}
               </div>
 
-              {/* Action Buttons based on State Machine */}
+              {/* Action Buttons */}
               <div className="flex flex-col space-y-2 md:w-48 shrink-0">
                 {job.status === "Requested" && (
                   <>
@@ -148,9 +153,7 @@ export default function ManageJobs() {
         )}
       </div>
 
-      {/* ========================================== */}
-      {/* COMPLETION MODAL WITH IMAGE UPLOADS        */}
-      {/* ========================================== */}
+      {/* Completion Modal */}
       {completingJobId && (
         <div 
           className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
@@ -163,7 +166,6 @@ export default function ManageJobs() {
             <h3 className="text-xl font-bold text-gray-800 mb-2">Complete Job #{completingJobId}</h3>
             <p className="text-sm text-gray-500 mb-4">Upload before and after photos of your work to complete this booking.</p>
             
-            {/* 🌟 Display validation error if they try to submit without images */}
             {uploadError && (
               <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm mb-4 border border-red-200">
                 {uploadError}

@@ -1,13 +1,12 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { forgotPasswordAPI } from "../../api/authApi"; // You'll need to add this to your API file
-
+import { forgotPasswordAPI } from "../../api/authApi"; 
 
 export const requestPasswordReset = createAsyncThunk(
   "auth/forgotPassword",
   async (email, { rejectWithValue }) => {
     try {
       const response = await forgotPasswordAPI(email);
-      return response.message; 
+      return response.message;
     } catch (error) {
       return rejectWithValue(
         error.response?.data?.message || "Something went wrong"
@@ -20,8 +19,8 @@ const initialState = {
   user: null,
   isAuthenticated: false,
   isLoading: false,
-  error: null, 
-  message: null, 
+  error: null,
+  message: null,
 };
 
 const authSlice = createSlice({

@@ -18,7 +18,6 @@ export const toggleAvailabilityAPI = async (isAvailable) => {
   return response.data;
 };
 
-// Fetch all available categories from the database
 export const getCategoriesAPI = async () => {
   const response = await api.get('/categories');
   return response.data;
