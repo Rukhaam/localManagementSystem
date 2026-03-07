@@ -14,7 +14,7 @@ import Register from "./pages/public/registerPage";
 import ForgotPassword from "./pages/public/forgetPassword";
 
 // Customer Pages
-import CustomerDashboard from "./pages/customer/CustomerDashboard";
+import CustomerDashboard from "./pages/customer/customerDashboard";
 import MyBookings from "./pages/customer/myBookings";
 import ProviderProfile from "./pages/customer/providerProfile";
 
