@@ -20,12 +20,13 @@ import {
 } from "../utils/emailtemplate.js";
 
 // Helper function for cookie options
+
 const getCookieOptions = () => ({
   expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-  httpOnly: true, // Prevents client-side JS from accessing the cookie
-  // secure: process.env.NODE_ENV === "production", // Uncomment when deploying to production
+  httpOnly: true,
+  secure: true,   
+  sameSite: "none",  
 });
-
 // 1. REGISTER USER
 export const registerUser = catchAsyncErrors(async (req, res, next) => {
   const { name, email, password, role } = req.body;
@@ -206,6 +207,8 @@ export const logoutUser = catchAsyncErrors(async (req, res, next) => {
     .cookie("token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
+      secure: true,     
+      sameSite: "none",
     })
     .json({
       success: true,
