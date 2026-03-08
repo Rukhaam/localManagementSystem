@@ -376,9 +376,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* ========================================== */}
       {/* 6. FAQ SECTION                             */}
-      {/* ========================================== */}
       <section className="bg-white py-24 border-t border-gray-200 mt-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">

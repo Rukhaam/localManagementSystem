@@ -48,6 +48,7 @@ export const getAllApprovedProviders = async (categoryId = null) => {
     u.email, 
     c.name as category_name, 
     p.bio,
+    p.base_price,
     COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
     COUNT(r.id) AS total_reviews
   FROM provider_profiles p
@@ -63,7 +64,7 @@ export const getAllApprovedProviders = async (categoryId = null) => {
     params.push(categoryId);
   }
 
-  query += " GROUP BY p.id, p.user_id, p.category_id, u.name, u.email, c.name, p.bio";
+  query += " GROUP BY p.id, p.user_id, p.category_id, u.name, u.email, c.name, p.bio,p.base_price";
 
   const [rows] = await pool.query(query, params);
   return rows;

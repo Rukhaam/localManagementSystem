@@ -8,7 +8,9 @@ export const submitReview = createAsyncThunk(
       const response = await createReviewAPI(reviewData);
       return response.message;
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to submit review");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to submit review"
+      );
     }
   }
 );
@@ -20,7 +22,9 @@ export const fetchProviderReviews = createAsyncThunk(
       const response = await getProviderReviewsAPI(providerId);
       return { stats: response.stats, reviews: response.reviews };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to load reviews");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to load reviews"
+      );
     }
   }
 );
@@ -38,7 +42,7 @@ const reviewSlice = createSlice({
     clearReviewMessages: (state) => {
       state.error = null;
       state.successMessage = null;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -61,7 +65,7 @@ const reviewSlice = createSlice({
         state.stats = action.payload.stats;
         state.providerReviews = action.payload.reviews;
       });
-  }
+  },
 });
 
 export const { clearReviewMessages } = reviewSlice.actions;

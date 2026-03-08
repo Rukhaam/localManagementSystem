@@ -1,20 +1,29 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchMyBookings, updateBookingStatus, completeJob, clearBookingMessages } from "../../redux/slices/bookingSlice";
+import { 
+  fetchMyBookings, 
+  updateBookingStatus, 
+  completeJob, 
+  clearBookingMessages,
+  updateBookingPrice 
+} from "../../redux/slices/bookingSlice";
 import { useToast } from "../../hooks/toastHook";
 import LoadingSpinner from "../../components/common/loadingSpinner";
-import { Clock, Briefcase, History, Phone, MapPin, CalendarClock, Camera } from "lucide-react";
+import { Clock, Briefcase, History, Phone, MapPin, CalendarClock, Camera, FileEdit } from "lucide-react";
 
 export default function ManageJobs() {
   const dispatch = useDispatch();
   const { showSuccess, showError, showLoading, dismissToast } = useToast();
   
-  // Removed error/successMessage from destructured state to use Toasts instead
   const { items: bookings, isLoading } = useSelector((state) => state.bookings);
   
   const [activeTab, setActiveTab] = useState("requests"); 
   const [completingJobId, setCompletingJobId] = useState(null); 
   const [files, setFiles] = useState({ beforeImage: null, afterImage: null });
+
+  // 🌟 NEW: Price Update State
+  const [editingPriceJobId, setEditingPriceJobId] = useState(null);
+  const [newPrice, setNewPrice] = useState("");
 
   useEffect(() => {
     dispatch(fetchMyBookings());
@@ -65,6 +74,31 @@ export default function ManageJobs() {
       setFiles({ beforeImage: null, afterImage: null });
     } else {
       showError("Failed to upload images. Please try again.");
+    }
+  };
+
+  // 🌟 NEW: Handle Price Update Submission
+  const handlePriceUpdate = async (e) => {
+    e.preventDefault();
+    if (!newPrice || isNaN(newPrice) || newPrice <= 0) {
+      showError("Please enter a valid price amount.");
+      return;
+    }
+
+    const loadingId = showLoading("Updating final price...");
+    const res = await dispatch(updateBookingPrice({ 
+      bookingId: editingPriceJobId, 
+      newPrice: Number(newPrice) 
+    }));
+    
+    dismissToast(loadingId);
+
+    if (!res.error) {
+      showSuccess("Price updated successfully! 💵");
+      setEditingPriceJobId(null);
+      setNewPrice("");
+    } else {
+      showError(res.payload || "Failed to update price.");
     }
   };
 
@@ -141,6 +175,14 @@ export default function ManageJobs() {
                       <Phone size={16} className="text-gray-400"/> <span className="font-semibold text-gray-700">Contact:</span> <a href={`tel:${job.phone_number}`} className="text-blue-600 font-bold hover:underline">{job.phone_number}</a>
                     </p>
                   )}
+
+                  {/* 🌟 NEW: Display the Price on the Card */}
+                  {(job.price > 0) && (
+                    <p className="text-sm text-gray-600 flex items-center gap-2 mt-1">
+                      <span className="font-semibold text-gray-700 px-1.5 py-0.5 bg-gray-100 rounded-md border border-gray-200 text-xs tracking-wide">FINAL PRICE</span> 
+                      <span className="font-bold text-gray-900">₹{job.price}</span>
+                    </p>
+                  )}
                 </div>
 
                 {job.notes && <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-100 text-sm text-gray-600 italic">"{job.notes}"</div>}
@@ -157,8 +199,27 @@ export default function ManageJobs() {
                 {job.status === "Confirmed" && (
                   <button onClick={() => handleStatusChange(job.id, "In-progress")} disabled={isLoading} className="w-full bg-purple-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-purple-700 disabled:opacity-50 transition-all shadow-md">Start Job (In-Progress)</button>
                 )}
+                
                 {job.status === "In-progress" && (
-                  <button onClick={() => { setCompletingJobId(job.id); }} className="w-full bg-green-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-green-700 transition-all shadow-md flex items-center justify-center gap-2"><Camera size={16} /> Complete Job</button>
+                  <div className="flex flex-col gap-2 w-full">
+                    {/* 🌟 NEW: Update Price Button */}
+                    <button 
+                      onClick={() => {
+                        setEditingPriceJobId(job.id);
+                        setNewPrice(job.price || "");
+                      }} 
+                      className="w-full bg-blue-50 text-blue-700 border border-blue-200 text-sm font-bold py-2.5 rounded-xl hover:bg-blue-100 transition-colors flex items-center justify-center gap-2"
+                    >
+                      <FileEdit size={16} className="text-blue-600"/> Update Price
+                    </button>
+                    
+                    <button 
+                      onClick={() => setCompletingJobId(job.id)} 
+                      className="w-full bg-green-600 text-white text-sm font-bold py-3 rounded-xl hover:bg-green-700 transition-all shadow-md flex items-center justify-center gap-2"
+                    >
+                      <Camera size={16} /> Complete Job
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
@@ -166,7 +227,45 @@ export default function ManageJobs() {
         )}
       </div>
 
-      {/* Completion Modal */}
+      {/* ========================================= */}
+      {/* 🌟 NEW: UPDATE PRICE MODAL */}
+      {/* ========================================= */}
+      {editingPriceJobId && (
+        <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all" onClick={() => setEditingPriceJobId(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-8 relative overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-400 to-indigo-500"></div>
+            
+            <h3 className="text-2xl font-extrabold text-gray-900 mb-1">Update Final Price</h3>
+            <p className="text-sm text-gray-500 mb-6 font-medium">Set the final amount for Booking #{editingPriceJobId}.</p>
+            
+            <form onSubmit={handlePriceUpdate} className="space-y-6">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Final Amount (₹)</label>
+                <input 
+                  type="number" 
+                  required
+                  min="1"
+                  value={newPrice}
+                  onChange={(e) => setNewPrice(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 font-bold text-lg" 
+                  placeholder="e.g. 1500"
+                />
+              </div>
+              
+              <div className="flex space-x-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setEditingPriceJobId(null)} className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit" disabled={isLoading} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 disabled:opacity-50 transition-all shadow-md">
+                  {isLoading ? "Saving..." : "Update"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================= */}
+      {/* COMPLETION MODAL */}
+      {/* ========================================= */}
       {completingJobId && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all" onClick={() => { setCompletingJobId(null); }}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative overflow-hidden" onClick={(e) => e.stopPropagation()}>

@@ -4,16 +4,18 @@ import {
   updateBookingStatus,
   completeJob,
   getMyBookings,
+  rescheduleBooking,
+  updateBookingPrice
 } from "../controllers/bookingController.js";
 import {
   isAuthenticated,
   authorizeRoles,
 } from "../middlewares/authMiddleware.js";
-import { upload } from "../config/cloudinary.js"; // Import Cloudinary Multer setup
+import { upload } from "../config/cloudinary.js"; 
 import {
   validateRequest,
   bookingRules,
-} from "../middlewares/validatorsMiddleware.js"; // Import your validators
+} from "../middlewares/validatorsMiddleware.js";
 
 const router = express.Router();
 
@@ -28,7 +30,11 @@ router.post(
   validateRequest,
   requestBooking
 );
-
+router.patch(
+  "/:id/price",
+  authorizeRoles("provider"), 
+  updateBookingPrice
+);
 router.patch(
   "/:id/status",
   authorizeRoles("customer", "provider"),
@@ -43,6 +49,12 @@ router.patch(
     { name: "afterImage", maxCount: 1 },
   ]),
   completeJob
+);
+
+router.patch(
+  "/:id/reschedule",
+  authorizeRoles("customer"), 
+  rescheduleBooking
 );
 
 export default router;

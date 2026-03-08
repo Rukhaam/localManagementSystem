@@ -11,7 +11,6 @@ export const fetchProviderData = createAsyncThunk(
   "provider/fetchData",
   async (_, { rejectWithValue }) => {
     try {
-      // Fetch profile and categories at the same time for speed
       const [profileRes, categoriesRes] = await Promise.all([
         getProviderProfileAPI(),
         getCategoriesAPI()

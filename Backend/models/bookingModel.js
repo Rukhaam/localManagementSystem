@@ -1,6 +1,6 @@
 import pool from "../config/db.js";
 
-// 1. Create a new booking request (🌟 NOW INCLUDES PHONE NUMBER)
+// 1. Create a new booking request (🌟 NOW INCLUDES PRICE)
 export const insertBooking = async (
   customerId,
   providerId,
@@ -8,11 +8,12 @@ export const insertBooking = async (
   phoneNumber, 
   address,
   scheduledDate,
-  notes
+  notes,
+  price // <-- Added price argument
 ) => {
   const query = `
-    INSERT INTO bookings (customer_id, provider_id, category_id, phone_number, address, scheduled_date, notes, status) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, 'Requested')
+    INSERT INTO bookings (customer_id, provider_id, category_id, phone_number, address, scheduled_date, notes, status, price) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, 'Requested', ?)
   `;
   const [result] = await pool.query(query, [
     customerId,
@@ -22,6 +23,7 @@ export const insertBooking = async (
     address,
     scheduledDate,
     notes,
+    price // <-- Added to the array
   ]);
   return result.insertId;
 };
@@ -50,7 +52,6 @@ export const completeBookingInDB = async (
   await pool.query(query, [beforeImageUrl, afterImageUrl, bookingId]);
 };
 
-// 5. Get Bookings for a User (Dynamically handles Customer or Provider)
 export const getUserBookings = async (userId, role) => {
   const column = role === "provider" ? "provider_id" : "customer_id";
 
@@ -69,4 +70,14 @@ export const getUserBookings = async (userId, role) => {
 
   const [rows] = await pool.query(query, [userId]);
   return rows;
+};
+
+export const updateBookingDateInDB = async (bookingId, newDate) => {
+  const query = "UPDATE bookings SET scheduled_date = ? WHERE id = ?";
+  await pool.query(query, [newDate, bookingId]);
+};
+
+export const updateBookingPriceInDB = async (bookingId, newPrice) => {
+  const query = "UPDATE bookings SET price = ? WHERE id = ?";
+  await pool.query(query, [newPrice, bookingId]);
 };

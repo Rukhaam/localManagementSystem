@@ -11,6 +11,7 @@ import {
   clearReviewMessages,
 } from "../../redux/slices/reviewSlice";
 import { useToast } from "../../hooks/toastHook";
+import { ShieldCheck } from "lucide-react";
 
 export default function ProviderProfile() {
   const { id } = useParams(); // This is the profile_id from the URL
@@ -51,7 +52,7 @@ export default function ProviderProfile() {
     };
   }, [dispatch, providers.length]);
 
-  // 🌟 FIX: Wait until we find the provider, THEN fetch reviews using their USER_ID!
+  // Wait until we find the provider, THEN fetch reviews using their USER_ID!
   useEffect(() => {
     if (provider?.user_id) {
       dispatch(fetchProviderReviews(provider.user_id));
@@ -62,6 +63,9 @@ export default function ProviderProfile() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
+  // 🌟 Define your platform's standard base fee
+  const BASE_PRICE = 299;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const bookingPayload = {
@@ -71,6 +75,7 @@ export default function ProviderProfile() {
       address: formData.address,
       scheduledDate: formData.scheduledDate,
       notes: formData.notes,
+      price: BASE_PRICE, // 🌟 Pass it directly to the backend
     };
 
     const loadingId = showLoading("Confirming your booking...");
@@ -141,7 +146,6 @@ export default function ProviderProfile() {
                 {provider.category_name}
               </span>
 
-              {/* 🌟 FIX: Added safe chaining (stats?) to prevent crashes on initial load */}
               {stats?.totalReviews > 0 && (
                 <span className="flex items-center text-sm font-bold text-gray-700">
                   <span className="text-yellow-400 text-lg mr-1">★</span>
@@ -316,12 +320,34 @@ export default function ProviderProfile() {
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-shadow"
                 ></textarea>
               </div>
+
+              {/* 🌟 NEW: Pricing Summary Box */}
+              <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6 mt-4">
+                <h4 className="text-sm font-bold text-gray-900 mb-3">Booking Summary</h4>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
+                  <span>Base Visiting Fee</span>
+                  <span className="font-semibold">₹{BASE_PRICE}</span>
+                </div>
+                <div className="flex justify-between items-center text-sm text-gray-600 mb-3 pb-3 border-b border-blue-100/50">
+                  <span>Platform Fee</span>
+                  <span className="text-green-600 font-semibold">Free</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="font-extrabold text-gray-900">Total Estimated Price</span>
+                  <span className="font-extrabold text-blue-600 text-lg">₹{BASE_PRICE}</span>
+                </div>
+                <p className="text-xs text-gray-500 mt-3 flex items-start gap-1.5">
+                  <ShieldCheck size={14} className="shrink-0 text-blue-500 mt-0.5" />
+                  You will pay the provider directly after the job is completed.
+                </p>
+              </div>
+
               <button
                 type="submit"
                 disabled={booking}
-                className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-all disabled:opacity-70 shadow-md hover:shadow-lg"
+                className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all disabled:opacity-70 shadow-md hover:shadow-lg"
               >
-                {booking ? "Submitting..." : "Submit Booking Request"}
+                {booking ? "Submitting..." : `Confirm Booking • ₹${BASE_PRICE}`}
               </button>
             </form>
           )}

@@ -3,26 +3,25 @@ import {
   getBookingById,
   updateBookingStatusInDB,
   completeBookingInDB,
-  getUserBookings
+  getUserBookings,
+  updateBookingDateInDB,
+  updateBookingPriceInDB
 } from "../models/bookingModel.js";
 import { getProviderByUserId } from "../models/providerModel.js";
 import { catchAsyncErrors } from "../middlewares/catchAsyncErrorMiddleware.js";
 import { ErrorHandler } from "../middlewares/errorMiddleware.js";
 
-// @desc    Customer creates a new booking request
-// @route   POST /api/bookings
+
 export const requestBooking = catchAsyncErrors(async (req, res, next) => {
-  // 🌟 FIX: Added phoneNumber to the destructuring
-  const { providerId, categoryId, phoneNumber, address, scheduledDate, notes } = req.body;
+  const { providerId, categoryId, phoneNumber, address, scheduledDate, notes, price } = req.body;
   const customerId = req.user.id;
 
-  // Ensure the provider exists and is available
   const providerProfile = await getProviderByUserId(providerId);
   if (!providerProfile || !providerProfile.is_available || !providerProfile.is_approved) {
     return next(new ErrorHandler("Provider is currently unavailable or not approved", 400));
   }
 
-  // 🌟 FIX: Passed phoneNumber as the 4th argument, matching your SQL model perfectly
+  // 🌟 FIX: Pass the price down into the model
   const insertId = await insertBooking(
     customerId, 
     providerId, 
@@ -30,7 +29,8 @@ export const requestBooking = catchAsyncErrors(async (req, res, next) => {
     phoneNumber, 
     address, 
     scheduledDate, 
-    notes
+    notes,
+    price 
   );
 
   res.status(201).json({
@@ -40,8 +40,7 @@ export const requestBooking = catchAsyncErrors(async (req, res, next) => {
   });
 });
 
-// @desc    Update Booking Status (State Machine Logic)
-// @route   PATCH /api/bookings/:id/status
+
 export const updateBookingStatus = catchAsyncErrors(async (req, res, next) => {
   const { status } = req.body;
   const bookingId = req.params.id;
@@ -50,11 +49,9 @@ export const updateBookingStatus = catchAsyncErrors(async (req, res, next) => {
   const booking = await getBookingById(bookingId);
   if (!booking) return next(new ErrorHandler("Booking not found", 404));
 
-  // Security: Ensure user owns this booking
   if (role === 'customer' && booking.customer_id !== userId) return next(new ErrorHandler("Unauthorized", 403));
   if (role === 'provider' && booking.provider_id !== userId) return next(new ErrorHandler("Unauthorized", 403));
 
-  // --- STATE MACHINE VALIDATION ---
   const validTransitions = {
     'Requested': ['Confirmed', 'Cancelled'],
     'Confirmed': ['In-progress', 'Cancelled'],
@@ -67,7 +64,6 @@ export const updateBookingStatus = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler(`Cannot change status from ${booking.status} to ${status}`, 400));
   }
 
-  // Role Validation: Customers can ONLY cancel
   if (role === 'customer' && status !== 'Cancelled') {
     return next(new ErrorHandler("Customers can only cancel bookings.", 403));
   }
@@ -77,8 +73,7 @@ export const updateBookingStatus = catchAsyncErrors(async (req, res, next) => {
   res.status(200).json({ success: true, message: `Booking status updated to ${status}` });
 });
 
-// @desc    Complete a job and upload before/after images
-// @route   PATCH /api/bookings/:id/complete
+
 export const completeJob = catchAsyncErrors(async (req, res, next) => {
   const bookingId = req.params.id;
   const userId = req.user.id;
@@ -91,7 +86,6 @@ export const completeJob = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Job must be 'In-progress' before it can be completed", 400));
   }
 
-  // Extract Cloudinary URLs from multer req.files
   const beforeImageUrl = req.files?.beforeImage ? req.files.beforeImage[0].path : null;
   const afterImageUrl = req.files?.afterImage ? req.files.afterImage[0].path : null;
 
@@ -100,9 +94,52 @@ export const completeJob = catchAsyncErrors(async (req, res, next) => {
   res.status(200).json({ success: true, message: "Job completed successfully!" });
 });
 
-// @desc    Get user's bookings (Customer or Provider)
-// @route   GET /api/bookings
+
 export const getMyBookings = catchAsyncErrors(async (req, res, next) => {
   const bookings = await getUserBookings(req.user.id, req.user.role);
   res.status(200).json({ success: true, count: bookings.length, bookings });
+});
+
+
+export const rescheduleBooking = catchAsyncErrors(async (req, res, next) => {
+  const bookingId = req.params.id;
+  const { newDate } = req.body;
+  const userId = req.user.id;
+
+  const booking = await getBookingById(bookingId);
+  if (!booking) return next(new ErrorHandler("Booking not found", 404));
+  if (booking.customer_id !== userId) return next(new ErrorHandler("Unauthorized", 403));
+
+  if (["Completed", "Cancelled"].includes(booking.status)) {
+    return next(new ErrorHandler("Cannot reschedule a closed booking.", 400));
+  }
+
+  await updateBookingDateInDB(bookingId, newDate);
+
+  res.status(200).json({ success: true, message: "Booking successfully rescheduled!" });
+});
+
+
+
+export const updateBookingPrice = catchAsyncErrors(async (req, res, next) => {
+  const bookingId = req.params.id;
+  const { newPrice } = req.body;
+  const userId = req.user.id;
+
+  if (!newPrice || isNaN(newPrice) || newPrice <= 0) {
+    return next(new ErrorHandler("Please provide a valid price amount.", 400));
+  }
+
+  const booking = await getBookingById(bookingId);
+  if (!booking) return next(new ErrorHandler("Booking not found", 404));
+  
+  if (booking.provider_id !== userId) return next(new ErrorHandler("Unauthorized", 403));
+
+  if (["Completed", "Cancelled"].includes(booking.status)) {
+    return next(new ErrorHandler("Cannot update the price of a closed booking.", 400));
+  }
+
+  await updateBookingPriceInDB(bookingId, newPrice);
+
+  res.status(200).json({ success: true, message: `Price successfully updated to ₹${newPrice}` });
 });

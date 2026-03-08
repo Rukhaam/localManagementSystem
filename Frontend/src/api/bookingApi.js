@@ -20,3 +20,12 @@ export const requestBookingAPI = async (bookingData) => {
     const response = await api.post('/bookings', bookingData);
     return response.data;
   };
+export const rescheduleBookingAPI = async (bookingId, newDate) => {
+  const response = await api.patch(`/bookings/${bookingId}/reschedule`, { newDate });
+  return response.data;
+};
+
+export const updateBookingPriceAPI = async (bookingId, newPrice) => {
+  const response = await api.patch(`/bookings/${bookingId}/price`, { newPrice });
+  return response.data;
+};
