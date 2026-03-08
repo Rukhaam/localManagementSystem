@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { Link, useNavigate, NavLink } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import { motion, AnimatePresence } from "framer-motion";
+import { Menu, X, LogOut, LayoutDashboard } from "lucide-react"; 
 import { logout } from "../../redux/slices/authSlice";
-import { logoutUserAPI } from "../../api/authApi"; // 🌟 IMPORTANT: Import the API function!
+import { logoutUserAPI } from "../../api/authApi"; 
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -16,10 +18,14 @@ export default function Navbar() {
     } catch (error) {
       console.error("Failed to log out from server", error);
     } finally {
-
       dispatch(logout());
       navigate("/login");
     }
+  };
+
+  // 🌟 Your Scroll To Top function (without e.preventDefault so routing still works!)
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });  
   };
 
   const getDashboardLink = () => {
@@ -29,7 +35,6 @@ export default function Navbar() {
     return "/customer/dashboard";
   };
 
-  // Get dynamic sidebar links to display in the mobile menu
   const getSidebarLinks = () => {
     const role = user?.role?.toLowerCase().trim();
     if (role === "admin") {
@@ -56,127 +61,130 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="bg-white border-b border-gray-100 sticky top-0 z-50">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 transition-all">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          {/* Logo Section */}
-          <div className="flex items-center">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-xl leading-none">L</span>
-              </div>
-              <span className="font-extrabold text-xl text-gray-900 tracking-tight">LocalHub</span>
-            </Link>
-          </div>
+        <div className="flex justify-between items-center h-16 md:h-20">
+          
+          {/* 🌟 Logo Section with scrollToTop attached */}
+          <Link to="/"  className="flex items-center gap-2.5 group">
+            <div className="w-9 h-9 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all" >
+              <span className="text-white font-extrabold text-xl leading-none ">L</span>
+            </div>
+            <span className="font-extrabold text-2xl text-gray-900 tracking-tight">LocalHub</span>
+          </Link>
 
           {/* Desktop Navigation Links */}
-          <ul className="hidden md:flex items-center space-x-8">
+          <ul className="hidden md:flex items-center space-x-1">
             <li>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">Home</Link>
+              <Link to="/" onClick={scrollToTop} className="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold rounded-lg hover:bg-gray-100/50 transition-all">Home</Link>
             </li>
             <li>
-              <Link to="/" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">Explore Services</Link>
-            </li>
-            <li>
-              <a href="#how-it-works" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">How it Works</a>
+              <button onClick={() => document.getElementById("providers-section")?.scrollIntoView({ behavior: "smooth" })} className="px-4 py-2 text-gray-600 hover:text-gray-900 font-semibold rounded-lg hover:bg-gray-100/50 transition-all">
+                Explore
+              </button>
             </li>
           </ul>
 
           {/* Desktop Auth Buttons */}
-          <div className="hidden md:flex items-center space-x-4">
+          <div className="hidden md:flex items-center space-x-3">
             {isAuthenticated ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm font-medium text-gray-500">Hi, {user?.name?.split(" ")[0]}</span>
-                <Link to={getDashboardLink()} className="text-blue-600 font-semibold hover:text-blue-800 transition-colors">Dashboard</Link>
-                <button onClick={handleLogout} className="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-medium hover:bg-gray-200 transition-colors">Log out</button>
+              <div className="flex items-center gap-3">
+                <Link 
+                  to={getDashboardLink()} 
+                  className="flex items-center gap-2 px-4 py-2.5 text-sm font-bold text-gray-700 hover:text-gray-900 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl shadow-sm transition-all"
+                >
+                  <LayoutDashboard size={16} />
+                  Dashboard
+                </Link>
+                <button 
+                  onClick={handleLogout} 
+                  className="flex items-center justify-center p-2.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                  title="Log out"
+                >
+                  <LogOut size={18} />
+                </button>
               </div>
             ) : (
               <>
-                <Link to="/login" className="text-gray-600 hover:text-blue-600 font-medium transition-colors">Log in</Link>
-                <Link to="/register" className="bg-blue-600 text-white px-5 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-sm">Sign up</Link>
+                <Link to="/login" className="px-5 py-2.5 text-sm font-bold text-gray-600 hover:text-gray-900 transition-colors">Log in</Link>
+                <Link to="/register" className="bg-gray-900 text-white px-5 py-2.5 rounded-xl text-sm font-bold hover:bg-gray-800 transition-all shadow-md hover:shadow-lg">Sign up</Link>
               </>
             )}
           </div>
 
           {/* Mobile Menu Hamburger Button */}
           <div className="flex items-center md:hidden">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-gray-500 hover:text-gray-700 focus:outline-none p-2" aria-label="Toggle Menu">
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                {isOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                )}
-              </svg>
+            <button 
+              onClick={() => setIsOpen(!isOpen)} 
+              className="text-gray-600 hover:text-gray-900 focus:outline-none p-2 bg-gray-100 rounded-lg"
+            >
+              {isOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
         </div>
       </div>
 
-      {/* Mobile Navigation Dropdown Menu */}
-      {isOpen && (
-        <div className="md:hidden bg-white border-t border-gray-100 shadow-xl absolute w-full left-0">
-          <ul className="px-4 pt-2 pb-4 space-y-1">
-            <li>
-              <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md">
-                Home
-              </Link>
-            </li>
-            <li>
-              <Link to="/" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-md">
-                Explore Services
-              </Link>
-            </li>
+      {/* Animated Mobile Navigation Dropdown Menu */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="md:hidden bg-white/95 backdrop-blur-xl border-t border-gray-200/60 shadow-2xl absolute w-full left-0 overflow-hidden"
+          >
+            <ul className="px-4 pt-4 pb-6 space-y-2">
+              <li>
+                <Link to="/" onClick={() => { scrollToTop(); setIsOpen(false); }} className="block px-4 py-3 text-base font-bold text-gray-800 hover:bg-gray-100 rounded-xl">Home</Link>
+              </li>
+              <li>
+                <button onClick={() => { document.getElementById("providers-section")?.scrollIntoView({ behavior: "smooth" }); setIsOpen(false); }} className="w-full text-left px-4 py-3 text-base font-bold text-gray-800 hover:bg-gray-100 rounded-xl">
+                  Explore Services
+                </button>
+              </li>
 
-            <li className="border-t border-gray-100 mt-4 pt-4">
-              <ul className="space-y-1">
-                {isAuthenticated ? (
-                  <>
-                    <li className="mb-4">
-                      <div className="px-3 text-xs uppercase text-gray-400 font-bold tracking-wider mb-2">{user?.role} Menu</div>
-                      <ul className="space-y-1">
-                        {getSidebarLinks().map((link) => (
-                          <li key={link.name}>
-                            <NavLink
-                              to={link.path}
-                              onClick={() => setIsOpen(false)}
-                              className={({ isActive }) => `block px-3 py-2 text-base font-medium rounded-md ${isActive ? "bg-blue-50 text-blue-700" : "text-gray-700 hover:bg-gray-50"}`}
-                            >
-                              {link.name}
-                            </NavLink>
-                          </li>
-                        ))}
-                      </ul>
-                    </li>
+              <li className="border-t border-gray-100 mt-4 pt-4">
+                <ul className="space-y-2">
+                  {isAuthenticated ? (
+                    <>
+                      <li className="mb-2">
+                        <div className="px-4 text-xs uppercase text-blue-600 font-extrabold tracking-widest mb-3">{user?.role} Menu</div>
+                        <ul className="space-y-1">
+                          {getSidebarLinks().map((link) => (
+                            <li key={link.name}>
+                              <NavLink
+                                to={link.path}
+                                onClick={() => setIsOpen(false)}
+                                className={({ isActive }) => `block px-4 py-3 text-sm font-bold rounded-xl ${isActive ? "bg-gray-900 text-white shadow-md" : "text-gray-600 hover:bg-gray-100"}`}
+                              >
+                                {link.name}
+                              </NavLink>
+                            </li>
+                          ))}
+                        </ul>
+                      </li>
 
-                    <li className="border-t border-gray-100 pt-2">
-                      <button
-                        onClick={() => { handleLogout(); setIsOpen(false); }}
-                        className="block w-full text-left px-3 py-2 text-base font-medium text-red-600 hover:bg-red-50 rounded-md transition-colors"
-                      >
-                        Log out
-                      </button>
-                    </li>
-                  </>
-                ) : (
-                  <>
-                    <li>
-                      <Link to="/login" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-50 rounded-md">
-                        Log in
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="/register" onClick={() => setIsOpen(false)} className="block px-3 py-2 text-base font-medium text-blue-600 hover:bg-blue-50 rounded-md">
-                        Sign up
-                      </Link>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </li>
-          </ul>
-        </div>
-      )}
+                      <li className="border-t border-gray-100 pt-3 mt-2">
+                        <button
+                          onClick={() => { handleLogout(); setIsOpen(false); }}
+                          className="flex items-center gap-2 w-full text-left px-4 py-3 text-sm font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                        >
+                          <LogOut size={16} /> Log out
+                        </button>
+                      </li>
+                    </>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-3 mt-4">
+                      <Link to="/login" onClick={() => setIsOpen(false)} className="block text-center px-4 py-3 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl">Log in</Link>
+                      <Link to="/register" onClick={() => setIsOpen(false)} className="block text-center px-4 py-3 text-sm font-bold text-white bg-gray-900 hover:bg-gray-800 rounded-xl">Sign up</Link>
+                    </div>
+                  )}
+                </ul>
+              </li>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </nav>
   );
 }

@@ -10,70 +10,87 @@ import {
   fetchProviderReviews,
   clearReviewMessages,
 } from "../../redux/slices/reviewSlice";
+import { useToast } from "../../hooks/toastHook";
 
 export default function ProviderProfile() {
-  const { id } = useParams();
+  const { id } = useParams(); // This is the profile_id from the URL
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { showSuccess, showError, showLoading, dismissToast } = useToast();
+
   const { user } = useSelector((state) => state.auth);
-  
+
   const { providers, isLoading: exploring } = useSelector(
     (state) => state.explore
   );
-  const {
-    isLoading: booking,
-    error,
-    successMessage,
-  } = useSelector((state) => state.bookings);
-
+  const { isLoading: booking } = useSelector((state) => state.bookings);
   const {
     providerReviews,
     stats,
     isLoading: reviewsLoading,
   } = useSelector((state) => state.reviews);
 
-  // 🌟 UPDATED STATE TO INCLUDE PHONE NUMBER
   const [formData, setFormData] = useState({
-    phoneNumber: "", // 🌟 Added
+    phoneNumber: "",
     address: "",
     scheduledDate: "",
     notes: "",
   });
 
+  // 1. Find the provider using the profile_id from the URL
+  const provider = providers.find((p) => p.profile_id === Number(id));
+
+  // 2. Fetch providers if we don't have them yet
   useEffect(() => {
     if (providers.length === 0) {
       dispatch(fetchActiveProviders(""));
     }
-    dispatch(fetchProviderReviews(id));
-
     return () => {
       dispatch(clearBookingMessages());
       dispatch(clearReviewMessages());
     };
-  }, [dispatch, providers.length, id]);
+  }, [dispatch, providers.length]);
 
-  const provider = providers.find((p) => p.profile_id === Number(id));
+  // 🌟 FIX: Wait until we find the provider, THEN fetch reviews using their USER_ID!
+  useEffect(() => {
+    if (provider?.user_id) {
+      dispatch(fetchProviderReviews(provider.user_id));
+    }
+  }, [dispatch, provider?.user_id]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const bookingPayload = {
       providerId: provider.user_id,
       categoryId: provider.category_id,
-      phoneNumber: formData.phoneNumber, // 🌟 Sent to Redux payload
+      phoneNumber: formData.phoneNumber,
       address: formData.address,
       scheduledDate: formData.scheduledDate,
       notes: formData.notes,
     };
 
-    dispatch(requestBooking(bookingPayload)).then((res) => {
-      if (!res.error) {
-        setFormData({ phoneNumber: "", address: "", scheduledDate: "", notes: "" });
-      }
-    });
+    const loadingId = showLoading("Confirming your booking...");
+
+    const res = await dispatch(requestBooking(bookingPayload));
+    dismissToast(loadingId);
+
+    if (!res.error) {
+      showSuccess("Booking confirmed! The provider has been notified. ✅");
+      setFormData({
+        phoneNumber: "",
+        address: "",
+        scheduledDate: "",
+        notes: "",
+      });
+
+      navigate("/customer/bookings");
+    } else {
+      showError(res.payload || "Oops! Something went wrong with your booking.");
+    }
   };
 
   const renderStars = (rating) => {
@@ -112,9 +129,7 @@ export default function ProviderProfile() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-8 mt-4 pb-12">
-      {/* ========================================== */}
-      {/* PROVIDER DETAILS CARD                      */}
-      {/* ========================================== */}
+      {/* PROVIDER DETAILS CARD */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8">
         <div className="flex flex-col md:flex-row justify-between items-start gap-4">
           <div>
@@ -126,7 +141,8 @@ export default function ProviderProfile() {
                 {provider.category_name}
               </span>
 
-              {stats.totalReviews > 0 && (
+              {/* 🌟 FIX: Added safe chaining (stats?) to prevent crashes on initial load */}
+              {stats?.totalReviews > 0 && (
                 <span className="flex items-center text-sm font-bold text-gray-700">
                   <span className="text-yellow-400 text-lg mr-1">★</span>
                   {stats.averageRating}{" "}
@@ -153,9 +169,7 @@ export default function ProviderProfile() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        {/* ========================================== */}
-        {/* REVIEWS SECTION                            */}
-        {/* ========================================== */}
+        {/* REVIEWS SECTION */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 flex flex-col h-full">
           <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
             Customer Reviews
@@ -166,7 +180,7 @@ export default function ProviderProfile() {
               <div className="h-20 bg-gray-100 rounded-lg w-full"></div>
               <div className="h-20 bg-gray-100 rounded-lg w-full"></div>
             </div>
-          ) : providerReviews.length === 0 ? (
+          ) : providerReviews?.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-6 bg-gray-50 rounded-xl border border-dashed border-gray-200">
               <div className="text-4xl mb-2">✨</div>
               <h3 className="text-gray-800 font-bold">No reviews yet</h3>
@@ -176,7 +190,7 @@ export default function ProviderProfile() {
             </div>
           ) : (
             <ul className="space-y-4 overflow-y-auto max-h-[400px] pr-2">
-              {providerReviews.map((review) => (
+              {providerReviews?.map((review) => (
                 <li
                   key={review.id}
                   className="p-4 bg-gray-50 rounded-xl border border-gray-100"
@@ -209,9 +223,7 @@ export default function ProviderProfile() {
           )}
         </div>
 
-        {/* ========================================== */}
-        {/* BOOKING FORM CARD                          */}
-        {/* ========================================== */}
+        {/* BOOKING FORM CARD */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 h-fit">
           <h2 className="text-2xl font-bold text-gray-800 mb-6">
             Request Service
@@ -228,106 +240,90 @@ export default function ProviderProfile() {
               </p>
             </div>
           ) : (
-            <>
-              {error && (
-                <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6 text-sm font-medium border border-red-200">
-                  {error}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Contact Phone Number
+                </label>
+                <input
+                  type="tel"
+                  name="phoneNumber"
+                  value={formData.phoneNumber}
+                  onChange={handleChange}
+                  required
+                  placeholder="123-456-7890"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Service Address
+                </label>
+                <input
+                  type="text"
+                  name="address"
+                  value={formData.address}
+                  onChange={handleChange}
+                  required
+                  placeholder="123 Main St, City"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Preferred Date
+                </label>
+                <div className="relative">
+                  <input
+                    type="date"
+                    name="scheduledDate"
+                    value={formData.scheduledDate}
+                    onChange={handleChange}
+                    required
+                    min={getLocalTodayString()}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 cursor-pointer appearance-none transition-shadow"
+                  />
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      ></path>
+                    </svg>
+                  </div>
                 </div>
-              )}
+              </div>
 
-              {successMessage ? (
-                <div className="bg-green-50 border border-green-200 p-8 rounded-xl text-center">
-                  <div className="text-green-600 text-5xl mb-4">✓</div>
-                  <h3 className="text-xl font-bold text-green-800 mb-2">
-                    Booking Requested!
-                  </h3>
-                  <p className="text-green-700 mb-6">{successMessage}</p>
-                  <Link
-                    to="/customer/dashboard"
-                    className="bg-green-600 text-white font-semibold px-6 py-2.5 rounded-lg hover:bg-green-700 transition-colors"
-                  >
-                    Go to My Bookings
-                  </Link>
-                </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  
-                  {/* 🌟 NEW: Phone Number Input */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Contact Phone Number
-                    </label>
-                    <input
-                      type="tel"
-                      name="phoneNumber"
-                      value={formData.phoneNumber}
-                      onChange={handleChange}
-                      required
-                      placeholder="123-456-7890"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Service Address
-                    </label>
-                    <input
-                      type="text"
-                      name="address"
-                      value={formData.address}
-                      onChange={handleChange}
-                      required
-                      placeholder="123 Main St, City"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none transition-shadow"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Preferred Date
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="date"
-                        name="scheduledDate"
-                        value={formData.scheduledDate}
-                        onChange={handleChange}
-                        required
-                        min={getLocalTodayString()} 
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-gray-700 cursor-pointer appearance-none transition-shadow"
-                      />
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400">
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                        </svg>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      Notes (Optional)
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={formData.notes}
-                      onChange={handleChange}
-                      rows="3"
-                      placeholder="Describe the issue..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-shadow"
-                    ></textarea>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={booking}
-                    className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-all disabled:opacity-70 shadow-md hover:shadow-lg"
-                  >
-                    {booking ? "Submitting..." : "Submit Booking Request"}
-                  </button>
-                </form>
-              )}
-            </>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notes (Optional)
+                </label>
+                <textarea
+                  name="notes"
+                  value={formData.notes}
+                  onChange={handleChange}
+                  rows="3"
+                  placeholder="Describe the issue..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-shadow"
+                ></textarea>
+              </div>
+              <button
+                type="submit"
+                disabled={booking}
+                className="w-full bg-blue-600 text-white font-bold py-3 rounded-lg hover:bg-blue-700 transition-all disabled:opacity-70 shadow-md hover:shadow-lg"
+              >
+                {booking ? "Submitting..." : "Submit Booking Request"}
+              </button>
+            </form>
           )}
         </div>
       </div>

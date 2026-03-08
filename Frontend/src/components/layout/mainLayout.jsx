@@ -1,29 +1,24 @@
-import { Outlet } from "react-router-dom";
-import { useSelector } from "react-redux";
-import Navbar from "./navBar";
-import Sidebar from "./sideBar";
-import Footer from "./footer";
+import { Outlet, useLocation } from "react-router-dom";
+import NavBar from "./navBar";
+import SideBar from "./sideBar";
+import Footer from "./footer"; 
 
 export default function MainLayout() {
-  const { isAuthenticated } = useSelector((state) => state.auth);
 
   return (
-    <div className="flex flex-col min-h-screen bg-gray-50">
-      {/* 1. Navbar stays fixed at the top */}
-      <Navbar />
+    <div className="flex h-screen bg-gray-50 font-sans">
+      <SideBar />
 
-      {/* 2. Main body area (Flex row for Sidebar + Content) */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Only show Sidebar if logged in */}
-        {isAuthenticated && <Sidebar />}
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        <NavBar />
 
-        {/* 3. The scrollable content area */}
-        <main className="flex-1 flex flex-col overflow-y-auto">
-          <div className="flex-1 p-6 sm:p-8">
-            {/* The current page renders right here! */}
-            <Outlet />
+        <main id="main-scroll-container" className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-50 flex flex-col">
+          <div className="flex-1">
+            <div className="h-full w-full">
+              <Outlet />
+            </div>
           </div>
-          <Footer />
+          <Footer  />
         </main>
       </div>
     </div>

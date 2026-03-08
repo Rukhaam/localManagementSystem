@@ -29,6 +29,8 @@ import ApproveProviders from "./pages/admin/approveProviders";
 import ManageCategories from "./pages/admin/managerCategories";
 
 import ScrollToTop from "./hooks/scrollToTopHook";
+import LoadingSpinner from "./components/common/loadingSpinner";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const dispatch = useDispatch();
@@ -50,18 +52,22 @@ function App() {
   }, [dispatch]);
 
   if (isCheckingAuth) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-xl font-semibold text-gray-600 animate-pulse">
-          Loading your session...
-        </div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading your session..." />;
   }
 
   return (
     <BrowserRouter>
       <ScrollToTop></ScrollToTop>
+      
+      <Toaster 
+        position="top-center" 
+        reverseOrder={false} 
+        toastOptions={{ 
+          className: 'shadow-lg rounded-xl text-sm font-medium',
+          duration: 4000 
+        }} 
+      />
+
       <Routes>
         <Route element={<MainLayout />}>
           {/* Public Routes */}
@@ -69,6 +75,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
+          
           {/* Customer Routes */}
           <Route path="/customer/provider/:id" element={<ProviderProfile />} />
 
@@ -101,8 +108,7 @@ function App() {
               <div className="p-8 text-2xl font-bold">404 - Page Not Found</div>
             }
           />
-        </Route>{" "}
-        {/* End of MainLayout */}
+        </Route> {/* End of MainLayout */}
       </Routes>
     </BrowserRouter>
   );

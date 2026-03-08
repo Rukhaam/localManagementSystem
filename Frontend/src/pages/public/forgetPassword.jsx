@@ -1,44 +1,42 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { forgotPasswordAPI, resetPasswordAPI } from "../../api/authApi";
+import { useToast } from "../../hooks/toastHook";
+import { Mail, KeyRound, Lock, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function ForgotPassword() {
   const [step, setStep] = useState(1);
   const [email, setEmail] = useState("");
-  const [token, setToken] = useState(""); // This is the OTP
+  const [token, setToken] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
-  
   const [isLoading, setIsLoading] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState(null);
   
   const navigate = useNavigate();
+  const { showSuccess, showError, showLoading, dismissToast } = useToast();
 
-  // Step 1: Request the Reset Code
   const handleRequestCode = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
-    setMessage("");
+    const loadingId = showLoading("Sending recovery code...");
 
     try {
       const data = await forgotPasswordAPI(email);
-      setMessage(data.message || "Reset code sent to your email!");
-      setStep(2); // Move to the next UI step
+      dismissToast(loadingId);
+      showSuccess(data.message || "Reset code sent to your email! 📧");
+      setStep(2); 
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to send reset code. Please try again.");
+      dismissToast(loadingId);
+      showError(err.response?.data?.message || "Failed to send reset code. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Step 2: Reset the Password
   const handleResetPassword = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    setError(null);
-    setMessage("");
+    const loadingId = showLoading("Updating your password...");
 
     try {
       const data = await resetPasswordAPI({
@@ -47,91 +45,98 @@ export default function ForgotPassword() {
         newPassword,
       });
       
-      setMessage(data.message || "Password reset successfully!");
+      dismissToast(loadingId);
+      showSuccess(data.message || "Password reset successfully! 🎉");
       
-      // Redirect to login after a short delay so they can read the success message
       setTimeout(() => {
         navigate("/login");
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to reset password. Check your code.");
+      dismissToast(loadingId);
+      showError(err.response?.data?.message || "Failed to reset password. Check your code.");
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-8 sm:p-12">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900 mb-2">
-            {step === 1 ? "Reset Password" : "Enter Reset Code"}
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8 relative overflow-hidden font-sans">
+      
+      {/* Premium Background Glow Effect */}
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-blue-400/20 blur-[120px] pointer-events-none"></div>
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-400/20 blur-[120px] pointer-events-none"></div>
+
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-gray-100 p-8 sm:p-12 relative z-10">
+        
+        {/* Header Section */}
+        <div className="text-center mb-10">
+          <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+            {step === 1 ? (
+              <KeyRound className="w-8 h-8 text-blue-600" />
+            ) : (
+              <Lock className="w-8 h-8 text-blue-600" />
+            )}
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900 mb-3 tracking-tight">
+            {step === 1 ? "Forgot Password?" : "Set New Password"}
           </h2>
-          <p className="text-gray-500">
+          <p className="text-gray-500 text-sm leading-relaxed px-4">
             {step === 1 
-              ? "Enter your email and we'll send you a recovery code." 
-              : "Check your email for the 6-digit code and create a new password."}
+              ? "No worries, we'll send you reset instructions." 
+              : "We've sent a 6-digit code to your email."}
           </p>
         </div>
 
-        {/* Status Banners */}
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium border border-red-200 shadow-sm flex items-center gap-3">
-            <span className="text-xl">⚠️</span> {error}
-          </div>
-        )}
-        {message && (
-          <div className="bg-green-50 text-green-700 p-4 rounded-xl mb-6 text-sm font-medium border border-green-200 shadow-sm flex items-center gap-3">
-            <span className="text-xl">✅</span> {message}
-          </div>
-        )}
-
-        {/* STEP 1 FORM: Ask for Email */}
+        {/* STEP 1: Request Code */}
         {step === 1 && (
-          <form onSubmit={handleRequestCode} className="space-y-5">
+          <form onSubmit={handleRequestCode} className="space-y-6 animate-fade-in-up">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label className="block text-sm font-bold text-gray-700 mb-2">
                 Email Address
               </label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                placeholder="you@example.com"
-              />
+              <div className="relative">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full pl-11 pr-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 font-medium"
+                  placeholder="name@example.com"
+                />
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
+              </div>
             </div>
 
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 focus:ring-4 focus:ring-blue-200 transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-4 shadow-md hover:shadow-lg"
+              className="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isLoading ? "Sending Code..." : "Send Reset Code"}
+              {isLoading ? "Sending Instructions..." : "Reset Password"}
             </button>
           </form>
         )}
 
-        {/* STEP 2 FORM: Ask for OTP and New Password */}
+        {/* STEP 2: Verify & Reset */}
         {step === 2 && (
-          <form onSubmit={handleResetPassword} className="space-y-5">
+          <form onSubmit={handleResetPassword} className="space-y-6 animate-fade-in-up">
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
-                6-Digit Reset Code
+              <label className="block text-sm font-bold text-gray-700 mb-2">
+                6-Digit Recovery Code
               </label>
               <input
                 type="text"
                 value={token}
                 onChange={(e) => setToken(e.target.value)}
                 required
-                className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all tracking-widest font-mono text-center"
-                placeholder="123456"
+                maxLength={6}
+                className="w-full px-4 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all tracking-[0.5em] font-mono text-center text-xl font-bold text-gray-900 placeholder:font-sans placeholder:tracking-normal placeholder:text-base placeholder:font-medium"
+                placeholder="Check your email"
               />
             </div>
 
             <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+              <label className="block text-sm font-bold text-gray-700 mb-2">
                 New Password
               </label>
               <div className="relative">
@@ -140,24 +145,16 @@ export default function ForgotPassword() {
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   required
-                  className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  className="w-full pl-11 pr-12 py-3.5 bg-gray-50 border border-gray-200 rounded-xl focus:bg-white focus:ring-2 focus:ring-blue-500 outline-none transition-all text-gray-900 font-medium"
                   placeholder="••••••••"
                 />
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 focus:outline-none transition-colors"
                 >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
-                    </svg>
-                  )}
+                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </button>
               </div>
             </div>
@@ -165,19 +162,20 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 focus:ring-4 focus:ring-gray-200 transition-all disabled:opacity-70 disabled:cursor-not-allowed mt-4 shadow-md hover:shadow-lg"
+              className="w-full bg-blue-600 text-white font-bold py-3.5 rounded-xl hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed"
             >
-              {isLoading ? "Updating..." : "Reset Password"}
+              {isLoading ? "Updating..." : "Confirm New Password"}
             </button>
           </form>
         )}
 
-        <div className="mt-8 text-center">
+        {/* Footer Navigation */}
+        <div className="mt-8 pt-6 border-t border-gray-100 text-center">
           <Link
             to="/login"
-            className="text-sm font-semibold text-gray-500 hover:text-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 text-sm font-bold text-gray-500 hover:text-gray-900 transition-colors"
           >
-            ← Back to Sign in
+            <ArrowLeft className="w-4 h-4" /> Back to Sign in
           </Link>
         </div>
       </div>

@@ -3,19 +3,28 @@ import { useSelector, useDispatch } from "react-redux";
 import { fetchMyBookings, updateBookingStatus, clearBookingMessages } from "../../redux/slices/bookingSlice";
 import { submitReview, clearReviewMessages } from "../../redux/slices/reviewSlice"; 
 import { Link } from "react-router-dom";
+import LoadingSpinner from "../../components/common/loadingSpinner";
+import { useToast } from "../../hooks/toastHook";
+import { 
+  CalendarCheck, 
+  MapPin, 
+  CalendarClock, 
+  XCircle, 
+  Star,
+  History,
+  Activity
+} from "lucide-react";
 
 export default function MyBookings() {
   const dispatch = useDispatch();
+  const { showSuccess, showError, showLoading, dismissToast } = useToast();
   
-  // States from Redux
-  const { items: bookings, isLoading: bookingsLoading, error: bookingError, successMessage: bookingSuccess } = useSelector((state) => state.bookings);
-  const { isLoading: reviewLoading, error: reviewError, successMessage: reviewSuccess } = useSelector((state) => state.reviews);
+  const { items: bookings, isLoading: bookingsLoading } = useSelector((state) => state.bookings);
+  const { isLoading: reviewLoading } = useSelector((state) => state.reviews);
   
-  // UI State
   const [activeTab, setActiveTab] = useState("active");
-  
-  // 🌟 Review Modal State
-  const [reviewingBookingId, setReviewingBookingId] = useState(null);
+  // 🌟 FIX 1: Store the entire booking object, not just the ID
+  const [reviewingBooking, setReviewingBooking] = useState(null);
   const [reviewData, setReviewData] = useState({ rating: 5, comment: "" });
 
   useEffect(() => {
@@ -30,24 +39,47 @@ export default function MyBookings() {
   const historyBookings = bookings.filter(b => ["Completed", "Cancelled"].includes(b.status));
   const currentBookings = activeTab === "active" ? activeBookings : historyBookings;
 
-  const handleCancelBooking = (bookingId) => {
+  const handleCancelBooking = async (bookingId) => {
     if (window.confirm("Are you sure you want to cancel this booking request?")) {
-      dispatch(updateBookingStatus({ bookingId, status: "Cancelled" }));
+      const loadingId = showLoading("Cancelling booking...");
+      const res = await dispatch(updateBookingStatus({ bookingId, status: "Cancelled" }));
+      dismissToast(loadingId);
+
+      if (!res.error) {
+        showSuccess("Booking successfully cancelled. 🚫");
+      } else {
+        showError(res.payload || "Failed to cancel booking.");
+      }
     }
   };
 
-  const handleReviewSubmit = (e) => {
+  const handleReviewSubmit = async (e) => {
     e.preventDefault();
-    dispatch(submitReview({ bookingId: reviewingBookingId, ...reviewData }))
-      .unwrap()
-      .then(() => {
-        setReviewingBookingId(null); // Close modal on success
-        setReviewData({ rating: 5, comment: "" }); // Reset form
-      })
-      .catch(() => {}); // Error handled by Redux state
+    const loadingId = showLoading("Submitting your review...");
+
+    // 🌟 FIX 2: Send all required data, including the providerId!
+    const payload = {
+      booking_id: reviewingBooking.id,         // Snake_case for backend DB
+      bookingId: reviewingBooking.id,          // CamelCase fallback
+      provider_id: reviewingBooking.provider_id, // Snake_case for backend DB
+      providerId: reviewingBooking.provider_id,  // CamelCase fallback
+      rating: reviewData.rating,
+      comment: reviewData.comment
+    };
+
+    const res = await dispatch(submitReview(payload)).unwrap().catch(() => ({ error: true }));
+    
+    dismissToast(loadingId);
+
+    if (!res.error) {
+      showSuccess("Review submitted! Thank you for your feedback. 🌟");
+      setReviewingBooking(null); 
+      setReviewData({ rating: 5, comment: "" }); 
+    } else {
+      showError("Failed to submit review. Please try again.");
+    }
   };
 
-  // 🌟 HELPER FUNCTION: Safe Date Formatter
   const formatDate = (dateString) => {
     if (!dateString) return "No Date Set";
     const date = new Date(dateString);
@@ -62,72 +94,118 @@ export default function MyBookings() {
   };
 
   if (bookingsLoading && bookings.length === 0) {
-    return <div className="p-12 text-center text-gray-500 animate-pulse">Loading your bookings...</div>;
+    return <LoadingSpinner fullScreen={false} message="Fetching your bookings..." />;
   }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 mt-4">
+    <div className="max-w-5xl mx-auto space-y-8 mt-4 pb-12">
+      
+      {/* HEADER */}
       <div>
-        <h1 className="text-3xl font-bold text-gray-800">My Bookings</h1>
-        <p className="text-gray-500 mt-2">Track your active service requests and past jobs.</p>
+        <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">My Bookings</h1>
+        <p className="text-gray-500 mt-2 text-lg">Track your active service requests and past jobs.</p>
       </div>
 
-      {/* Global Alerts */}
-      {(bookingError || reviewError) && (
-        <div className="bg-red-50 text-red-600 p-4 rounded-lg text-sm font-medium border border-red-200">
-          {bookingError || reviewError}
-        </div>
-      )}
-      {(bookingSuccess || reviewSuccess) && (
-        <div className="bg-green-50 text-green-700 p-4 rounded-lg text-sm font-medium border border-green-200">
-          {bookingSuccess || reviewSuccess}
-        </div>
-      )}
-
       {/* TABS */}
-      <div className="flex space-x-6 border-b border-gray-200">
-        <button onClick={() => setActiveTab("active")} className={`py-3 px-2 font-medium text-sm transition-colors border-b-2 ${activeTab === "active" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-          Active Jobs <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2.5 rounded-full text-xs">{activeBookings.length}</span>
+      <div className="flex space-x-8 border-b border-gray-200">
+        <button 
+          onClick={() => setActiveTab("active")} 
+          className={`pb-4 px-1 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
+            activeTab === "active" 
+            ? "border-blue-600 text-blue-600" 
+            : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
+          }`}
+        >
+          <Activity size={18} />
+          Active Jobs 
+          <span className={`ml-1.5 py-0.5 px-2.5 rounded-full text-xs transition-colors ${
+            activeTab === "active" ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600"
+          }`}>
+            {activeBookings.length}
+          </span>
         </button>
-        <button onClick={() => setActiveTab("history")} className={`py-3 px-2 font-medium text-sm transition-colors border-b-2 ${activeTab === "history" ? "border-blue-600 text-blue-600" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
-          Past History <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2.5 rounded-full text-xs">{historyBookings.length}</span>
+        <button 
+          onClick={() => setActiveTab("history")} 
+          className={`pb-4 px-1 font-bold text-sm transition-all border-b-2 flex items-center gap-2 ${
+            activeTab === "history" 
+            ? "border-gray-900 text-gray-900" 
+            : "border-transparent text-gray-500 hover:text-gray-800 hover:border-gray-300"
+          }`}
+        >
+          <History size={18} />
+          Past History 
+          <span className={`ml-1.5 py-0.5 px-2.5 rounded-full text-xs transition-colors ${
+            activeTab === "history" ? "bg-gray-200 text-gray-800" : "bg-gray-100 text-gray-600"
+          }`}>
+            {historyBookings.length}
+          </span>
         </button>
       </div>
 
       {/* BOOKINGS LIST */}
       <div className="space-y-4">
         {currentBookings.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-12 text-center">
-            <h3 className="text-lg font-bold text-gray-800 mb-2">No {activeTab} bookings</h3>
+          <div className="bg-gray-50/50 rounded-2xl border border-gray-200 border-dashed p-16 text-center flex flex-col items-center">
+            <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-4 shadow-sm border border-gray-100">
+              {activeTab === "active" ? <Activity className="w-8 h-8 text-blue-400" /> : <History className="w-8 h-8 text-gray-400" />}
+            </div>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">No {activeTab} bookings</h3>
             <p className="text-gray-500 mb-6">You don't have any jobs here yet.</p>
+            {activeTab === "active" && (
+              <Link to="/" className="bg-white border border-gray-200 text-gray-700 font-bold px-6 py-2.5 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">
+                Find a Professional
+              </Link>
+            )}
           </div>
         ) : (
           currentBookings.map((booking) => (
-            <div key={booking.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-md transition-shadow">
-              <div className="space-y-2 flex-1">
+            <div key={booking.id} className="group bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col md:flex-row justify-between gap-6 hover:shadow-md hover:border-blue-100 transition-all">
+              
+              <div className="space-y-4 flex-1">
                 <div className="flex items-center gap-3">
-                  <h3 className="text-lg font-bold text-gray-800">Booking #{booking.id}</h3>
-                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${booking.status === 'Completed' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
+                  <h3 className="text-xl font-bold text-gray-900">Booking #{booking.id}</h3>
+                  <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${
+                    booking.status === "Requested" ? "bg-blue-50 text-blue-700 border-blue-200"
+                    : booking.status === "Confirmed" ? "bg-amber-50 text-amber-700 border-amber-200"
+                    : booking.status === "In-progress" ? "bg-purple-50 text-purple-700 border-purple-200"
+                    : booking.status === "Completed" ? "bg-green-50 text-green-700 border-green-200"
+                    : "bg-red-50 text-red-700 border-red-200"
+                  }`}>
                     {booking.status}
                   </span>
                 </div>
-                {/* 🌟 DATE FIX APPLIED HERE */}
-                <p className="text-sm text-gray-600"><span className="font-semibold">Date:</span> {formatDate(booking.scheduledDate || booking.scheduled_date)}</p>
+                
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <CalendarClock size={16} className="text-gray-400" />
+                    <span className="font-semibold text-gray-700">Date:</span> {formatDate(booking.scheduledDate || booking.scheduled_date)}
+                  </p>
+                  <p className="text-sm text-gray-600 flex items-center gap-2">
+                    <MapPin size={16} className="text-gray-400" />
+                    <span className="font-semibold text-gray-700">Address:</span> {booking.address}
+                  </p>
+                </div>
               </div>
 
               {/* Action Buttons */}
-              <div className="flex flex-col space-y-2 shrink-0 md:w-48">
+              <div className="flex flex-col justify-center gap-3 shrink-0 md:w-56 border-t md:border-t-0 md:border-l border-gray-100 pt-4 md:pt-0 md:pl-6">
                 {["Requested", "Confirmed"].includes(booking.status) && (
-                  <button onClick={() => handleCancelBooking(booking.id)} disabled={bookingsLoading} className="w-full bg-white border border-red-200 text-red-600 text-sm font-semibold py-2 rounded-lg hover:bg-red-50">Cancel Request</button>
+                  <button 
+                    onClick={() => handleCancelBooking(booking.id)} 
+                    disabled={bookingsLoading} 
+                    className="w-full flex items-center justify-center gap-2 bg-white border border-red-200 text-red-600 text-sm font-bold py-2.5 rounded-xl hover:bg-red-50 transition-colors disabled:opacity-50"
+                  >
+                    <XCircle size={16} /> Cancel Request
+                  </button>
                 )}
                 
-                {/* 🌟 LEAVE A REVIEW BUTTON */}
                 {booking.status === "Completed" && (
+                  // 🌟 FIX 3: Pass the entire 'booking' object to state
                   <button 
-                    onClick={() => setReviewingBookingId(booking.id)} 
-                    className="w-full bg-blue-50 text-blue-700 border border-blue-200 text-sm font-semibold py-2 rounded-lg hover:bg-blue-100 transition-colors"
+                    onClick={() => setReviewingBooking(booking)} 
+                    className="w-full flex items-center justify-center gap-2 bg-blue-50 text-blue-700 border border-blue-200 text-sm font-bold py-2.5 rounded-xl hover:bg-blue-100 transition-colors"
                   >
-                    ⭐ Leave a Review
+                    <Star size={16} className="fill-blue-700" /> Leave a Review
                   </button>
                 )}
               </div>
@@ -136,52 +214,56 @@ export default function MyBookings() {
         )}
       </div>
 
-      {/* 🌟 REVIEW MODAL */}
-      {reviewingBookingId && (
+      {/* REVIEW MODAL */}
+      {reviewingBooking && (
         <div 
-          className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
-          onClick={() => setReviewingBookingId(null)}
+          className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 transition-all"
+          onClick={() => setReviewingBooking(null)}
         >
           <div 
-            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6"
+            className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 relative overflow-hidden"
             onClick={(e) => e.stopPropagation()} 
           >
-            <h3 className="text-xl font-bold text-gray-800 mb-2">Rate your experience</h3>
-            <p className="text-sm text-gray-500 mb-6">How was the service for Booking #{reviewingBookingId}?</p>
+            {/* Decorative top border */}
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-blue-500 to-indigo-500"></div>
+
+            <h3 className="text-2xl font-extrabold text-gray-900 mb-1">Rate your experience</h3>
+            <p className="text-sm text-gray-500 mb-8 font-medium">How was the service for Booking #{reviewingBooking.id}?</p>
             
-            <form onSubmit={handleReviewSubmit} className="space-y-5">
+            <form onSubmit={handleReviewSubmit} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Rating</label>
-                <div className="flex space-x-2">
+                <label className="block text-sm font-bold text-gray-700 mb-3">Your Rating</label>
+                <div className="flex space-x-1 bg-gray-50 p-3 rounded-xl border border-gray-100 w-fit">
                   {[1, 2, 3, 4, 5].map((star) => (
                     <button
                       type="button"
                       key={star}
                       onClick={() => setReviewData({ ...reviewData, rating: star })}
-                      className={`text-3xl focus:outline-none transition-transform hover:scale-110 ${
-                        reviewData.rating >= star ? "text-yellow-400" : "text-gray-200"
-                      }`}
+                      className="focus:outline-none transition-transform hover:scale-110 p-1"
                     >
-                      ★
+                      <Star 
+                        size={32} 
+                        className={reviewData.rating >= star ? "text-yellow-400 fill-yellow-400" : "text-gray-300"} 
+                      />
                     </button>
                   ))}
                 </div>
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Comment (Optional)</label>
+                <label className="block text-sm font-bold text-gray-700 mb-2">Comment (Optional)</label>
                 <textarea
-                  rows="3"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none resize-none"
+                  rows="4"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none resize-none transition-shadow text-sm"
                   placeholder="Share details of your experience..."
                   value={reviewData.comment}
                   onChange={(e) => setReviewData({ ...reviewData, comment: e.target.value })}
                 ></textarea>
               </div>
               
-              <div className="flex space-x-3 pt-4 border-t border-gray-100">
-                <button type="button" onClick={() => setReviewingBookingId(null)} className="flex-1 bg-gray-100 text-gray-700 font-semibold py-2.5 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
-                <button type="submit" disabled={reviewLoading} className="flex-1 bg-blue-600 text-white font-semibold py-2.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50">
+              <div className="flex space-x-3 pt-4">
+                <button type="button" onClick={() => setReviewingBooking(null)} className="flex-1 bg-white border border-gray-200 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-50 transition-colors">Cancel</button>
+                <button type="submit" disabled={reviewLoading} className="flex-1 bg-blue-600 text-white font-bold py-3 rounded-xl hover:bg-blue-700 transition-colors disabled:opacity-50 shadow-md">
                   {reviewLoading ? "Submitting..." : "Submit Review"}
                 </button>
               </div>

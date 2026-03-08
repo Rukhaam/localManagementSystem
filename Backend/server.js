@@ -17,7 +17,7 @@ import { errorMiddleware } from "./middlewares/errorMiddleware.js";
 
 dotenv.config();
 
-// Env Var Safety Checks & Fallbacks
+
 if (!process.env.JWT_SECRET) {
   console.warn("⚠️ WARNING: JWT_SECRET is missing in .env!");
   process.env.JWT_SECRET = "development_fallback_secret_do_not_use_in_prod";
@@ -31,13 +31,7 @@ app.set("trust proxy", 1);
 // 1. Set Security HTTP Headers
 app.use(helmet());
 
-// 2. Rate Limiting
-const limiter = rateLimit({
-  windowMs: 60 * 60 * 1000, // 15 minutes
-  max: 10000,
-  message: "Too many requests from this IP, please try again in 15 minutes.",
-});
-app.use("/api", limiter);
+
 app.use(
   cors({
     origin: [

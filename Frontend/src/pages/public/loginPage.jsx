@@ -3,7 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate, Link } from "react-router-dom";
 import { loginUserAPI } from "../../api/authApi";
 import { setCredentials } from "../../redux/slices/authSlice";
-
+import { useToast } from "../../hooks/toastHook";
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -13,6 +13,7 @@ export default function Login() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { showSuccess, showError } = useToast();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -22,7 +23,7 @@ export default function Login() {
     try {
       const response = await loginUserAPI({ email, password });
       dispatch(setCredentials(response.user));
-
+      showSuccess(`Welcome back, ${response.user.name}!`);
       const safeRole = response.user.role.toLowerCase().trim();
       if (safeRole === "admin") {
         navigate("/admin/dashboard");
@@ -32,9 +33,7 @@ export default function Login() {
         navigate("/customer/dashboard");
       }
     } catch (err) {
-      setError(
-        err.response?.data?.message || "Something went wrong. Please try again."
-      );
+      showError(err.response?.data?.message || "Invalid email or password.");
     } finally {
       setIsLoading(false);
     }
@@ -86,12 +85,6 @@ export default function Login() {
             <p className="text-gray-500 mb-8">
               Please enter your details to sign in.
             </p>
-
-            {error && (
-              <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-6 text-sm font-medium border border-red-200 shadow-sm flex items-center gap-3">
-                <span className="text-xl">⚠️</span> {error}
-              </div>
-            )}
 
             <form onSubmit={handleLogin} className="space-y-5">
               <div>

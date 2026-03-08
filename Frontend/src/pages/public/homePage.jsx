@@ -2,364 +2,387 @@ import { useEffect, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import {
+  Zap,
+  ChevronDown,
+  Search,
+  Star,
+  CheckCircle2,
+  ArrowRight,
+  ShieldCheck,
+} from "lucide-react";
+import {
   fetchCategories,
   fetchActiveProviders,
   setSelectedCategory,
 } from "../../redux/slices/exploreSlice";
 
+import { featuresData } from "../../utils/homeData";
+import { faqs } from "../../utils/faqsData";
+
 export default function Home() {
   const dispatch = useDispatch();
 
-  // Grab state directly from Redux
   const { categories, providers, selectedCategoryId, isLoading, error } =
     useSelector((state) => state.explore);
 
-  // FAQ State
   const [activeFaq, setActiveFaq] = useState(null);
 
-  // 1. Fetch data on mount (🌟 conditionally!)
   useEffect(() => {
     if (categories.length === 0) {
       dispatch(fetchCategories());
     }
     if (providers.length === 0) {
-      dispatch(fetchActiveProviders("")); // Fetch all providers initially
+      dispatch(fetchActiveProviders(""));
     }
   }, [dispatch, categories.length, providers.length]);
 
-  // 2. Handle Category Filter Click
   const handleCategoryClick = (categoryId) => {
-    // If they click the already selected category, unselect it (show all)
     const newCategoryId = selectedCategoryId === categoryId ? "" : categoryId;
-
-    // 🌟 ONLY update the UI state, DO NOT call the API here!
     dispatch(setSelectedCategory(newCategoryId));
 
-    // Smooth scroll down to the providers section
     setTimeout(() => {
       document
         .getElementById("providers-section")
-        ?.scrollIntoView({ behavior: "smooth" });
+        ?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
   };
 
-  const faqs = [
-    {
-      q: "How do I book a service?",
-      a: "Simply browse our categories, select a trusted professional, and pick a date that works for you!",
-    },
-    {
-      q: "Are the service providers verified?",
-      a: "Yes! Every provider goes through a strict manual approval process by our admin team before they can accept jobs.",
-    },
-    {
-      q: "How do I pay?",
-      a: "Currently, payments are handled directly with the provider after the job is completed to your satisfaction.",
-    },
-    {
-      q: "Can I cancel a booking?",
-      a: "Yes, you can cancel any booking request from your dashboard as long as the provider hasn't arrived yet.",
-    },
-  ];
-
-  // 🌟 ZERO-API FILTERING: Filter the list locally in the browser
   const displayedProviders = selectedCategoryId
     ? providers.filter(
         (provider) => provider.category_id === selectedCategoryId
       )
     : providers;
 
-  return (
-    <div className="flex flex-col min-h-screen bg-gray-50 w-full">
-      {/* Inline style for smooth Left-to-Right Marquee animation */}
-      <style>{`
-        @keyframes marquee-reverse {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0%); }
-        }
-        .animate-marquee-reverse {
-          display: flex;
-          white-space: nowrap;
-          animation: marquee-reverse 35s linear infinite;
-        }
-      `}</style>
+  const marqueeItems = [
+    ...categories,
+    ...categories,
+    ...categories,
+    ...categories,
+  ];
 
-      {/* ========================================== */}
+  return (
+    <div className="flex flex-col min-h-screen bg-[#fafafa] w-full font-sans selection:bg-blue-100 selection:text-blue-900">
       {/* 1. HERO SECTION                            */}
-      {/* ========================================== */}
-      <section className="bg-white border-b border-gray-100 py-16 md:py-24">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col-reverse md:flex-row items-center gap-12">
-          {/* Left: Text Content */}
-          <div className="flex-1 space-y-6 text-center md:text-left">
-            <h1 className="text-4xl md:text-6xl font-extrabold text-gray-900 leading-tight tracking-tight">
-              Expert services, <br className="hidden md:block" /> right at your
-              doorstep.
-            </h1>
-            <p className="text-lg md:text-xl text-gray-600 max-w-lg mx-auto md:mx-0">
-              From emergency plumbing to professional home painting. Connect
-              with verified local professionals instantly and get the job done
-              right.
-            </p>
-            <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center md:justify-start">
-              <button
-                onClick={() =>
-                  document
-                    .getElementById("providers-section")
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-                className="bg-blue-600 text-white font-bold text-lg px-8 py-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30"
-              >
-                Find a Professional
-              </button>
-              <Link
-                to="/register"
-                className="bg-white text-gray-800 border-2 border-gray-200 font-bold text-lg px-8 py-4 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all"
-              >
-                Become a Provider
-              </Link>
-            </div>
+      <section className="relative overflow-hidden bg-white border-b border-gray-200 py-20 md:py-32">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none"></div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center">
+          <div className="animate-fade-in-up opacity-0 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-blue-600 text-sm font-semibold mb-8">
+            <ShieldCheck size={16} />
+            <span>Trusted by 10,000+ local residents</span>
           </div>
 
-          {/* Right: Hero Image */}
-          <div className="flex-1 w-full">
-            <img
-              src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
-              alt="Professional cleaning service"
-              className="w-full h-[400px] md:h-[500px] object-cover rounded-3xl shadow-2xl border-4 border-white"
-            />
+          <h1 className="animate-fade-in-up delay-100 opacity-0 text-5xl md:text-5xl font-extrabold text-gray-900 leading-[1.1] tracking-tight max-w-4xl">
+            Expert local services, <br className="hidden md:block" />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">
+              right at your doorstep.
+            </span>
+          </h1>
+
+          <p className="animate-fade-in-up delay-200 opacity-0 mt-6 text-xl text-gray-500 max-w-2xl">
+            From emergency plumbing to professional home cleaning. Connect with
+            verified local professionals instantly and get the job done right.
+          </p>
+
+          <div className="animate-fade-in-up delay-300 opacity-0 mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+            <button
+              onClick={() =>
+                document
+                  .getElementById("providers-section")
+                  ?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="group flex items-center justify-center gap-2 bg-gray-900 text-white font-medium text-lg px-8 py-4 rounded-xl hover:bg-gray-800 transition-all shadow-xl shadow-gray-900/10 hover:shadow-gray-900/20"
+            >
+              <Search size={20} />
+              Find a Professional
+            </button>
+            <Link
+              to="/register"
+              className="group flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-200 font-medium text-lg px-8 py-4 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+            >
+              Become a Provider
+              <ArrowRight
+                size={20}
+                className="group-hover:translate-x-1 transition-transform"
+              />
+            </Link>
           </div>
         </div>
       </section>
 
       {/* ========================================== */}
-      {/* 2. SERVICES MARQUEE                        */}
+      {/* 2. PURE CSS MARQUEE                        */}
       {/* ========================================== */}
-      <div className="relative bg-gray-900 overflow-hidden py-6 border-y border-gray-800 shadow-2xl" >
-        {/* Left and Right Gradient Fades for a seamless look */}
-        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-gray-900 to-transparent z-10 pointer-events-none"></div>
-        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-gray-900 to-transparent z-10 pointer-events-none"></div>
+      <div className="relative bg-white overflow-hidden py-8 border-b border-gray-200 flex items-center">
+        <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
+        <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
 
-        <div className="flex w-max">
-          <div className="animate-marquee-reverse flex items-center">
-            {categories.length > 0 ? (
-              [
-                ...categories,
-                ...categories,
-                ...categories,
-                ...categories,
-                ...categories,
-              ].map((cat, i) => (
-                <div key={i} className="flex items-center mx-8 group">
-                  {/* Lightning Bolt SVG */}
-                  <svg
-                    className="w-7 h-7 text-blue-500 mr-4 group-hover:scale-110 transition-transform"
-                    fill="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" />
-                  </svg>
-                  <span className="text-gray-200 font-extrabold text-2xl uppercase tracking-widest group-hover:text-white transition-colors">
-                    {cat.name}
-                  </span>
-                </div>
-              ))
-            ) : (
-              // Fallback if categories are loading
-              <div className="flex items-center mx-8">
-                <span className="text-gray-400 font-bold text-xl uppercase tracking-widest">
-                  LOADING SERVICES...
+        <div className="flex w-max animate-scroll hover:[animation-play-state:paused]">
+          {categories.length > 0 ? (
+            marqueeItems.map((cat, i) => (
+              <div
+                key={i}
+                className="flex items-center mx-6 group cursor-default"
+              >
+                <Zap className="w-5 h-5 text-gray-300 mr-3 group-hover:text-blue-500 transition-colors" />
+                <span className="text-gray-400 font-bold text-xl uppercase tracking-widest group-hover:text-gray-900 transition-colors">
+                  {cat.name}
                 </span>
               </div>
-            )}
-          </div>
+            ))
+          ) : (
+            <div className="flex items-center mx-8">
+              <span className="text-gray-300 font-bold text-xl uppercase tracking-widest">
+                LOADING SERVICES...
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
-      <main className="flex-1 w-full pb-20">
+      <main className="flex-1 w-full pb-24">
         {/* ========================================== */}
-        {/* 3. VISUAL CATEGORIES GRID                  */}
+        {/* 3. NEW: SLICK FEATURES GRID                */}
         {/* ========================================== */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
-              Our Top Categories
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+          <div className="mb-16 max-w-2xl">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
+              Everything you need to get it done.
             </h2>
-            <p className="text-gray-500 max-w-2xl mx-auto text-lg">
-              Select a service below to see our certified professionals.
+            <p className="text-lg text-gray-500 leading-relaxed">
+              Powerful features designed to help you find, book, and manage
+              local services smarter and faster. No clutter, just results.
             </p>
           </div>
 
-          {isLoading && categories.length === 0 ? (
-            <div className="flex justify-center py-12">
-              <div className="animate-pulse text-blue-600 font-bold text-xl">
-                Loading categories...
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+            {featuresData.map((feature) => (
+              <div
+                key={feature.id}
+                className="group bg-white p-8 rounded-3xl border border-gray-200/80 shadow-sm hover:shadow-xl hover:-translate-y-1 hover:border-blue-100 transition-all duration-300"
+              >
+                <div className="text-sm font-extrabold text-blue-600 mb-4 tracking-widest">
+                  {feature.id}
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-blue-600 transition-colors duration-300">
+                  {feature.title}
+                </h3>
+                <p className="text-gray-500 leading-relaxed text-sm md:text-base">
+                  {feature.description}
+                </p>
               </div>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-              {categories.map((category) => (
-                <button
-                  key={category.id}
-                  onClick={() => handleCategoryClick(category.id)}
-                  className={`text-left group bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all hover:-translate-y-1 ${
-                    selectedCategoryId === category.id
-                      ? "ring-4 ring-blue-500 border-transparent"
-                      : "border-gray-100"
-                  }`}
-                >
-                  <div className="h-48 w-full bg-gray-200 overflow-hidden relative">
-                    <div className="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors z-10"></div>
-                    <img
-                      src={`https://source.unsplash.com/600x400/?${category.name.replace(
-                        " ",
-                        ","
-                      )},service`}
-                      alt={category.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      onError={(e) => {
-                        e.target.src =
-                          "https://images.unsplash.com/photo-1542013936693-884638332954?auto=format&fit=crop&w=600&q=80";
-                      }}
-                    />
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-gray-900 mb-2">
-                      {category.name}
-                    </h3>
-                    <p className="text-sm text-gray-500 line-clamp-2">
-                      {category.description}
-                    </p>
-                    <div className="mt-4 text-blue-600 font-semibold text-sm group-hover:text-blue-800 flex items-center gap-1">
-                      {selectedCategoryId === category.id
-                        ? "Currently Viewing"
-                        : "View Providers"}{" "}
-                      <span className="group-hover:translate-x-1 transition-transform">
-                        →
-                      </span>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          )}
+            ))}
+          </div>
         </section>
 
         {/* ========================================== */}
-        {/* 4. PROVIDER GRID SECTION                   */}
+        {/* 4. VISUAL CATEGORIES GRID                  */}
+        {/* ========================================== */}
+        <section className="bg-white border-y border-gray-200 py-24">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="text-center mb-16">
+              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
+                Explore Services
+              </h2>
+              <p className="text-gray-500 max-w-2xl mx-auto text-lg">
+                Select a category below to filter our verified professionals.
+              </p>
+            </div>
+
+            {isLoading && categories.length === 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {[1, 2, 3, 4].map((n) => (
+                  <div
+                    key={n}
+                    className="bg-gray-100 rounded-2xl h-64 animate-pulse border border-gray-200"
+                  ></div>
+                ))}
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                {categories.map((category) => (
+                  <button
+                    key={category.id}
+                    onClick={() => handleCategoryClick(category.id)}
+                    className={`text-left group relative bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
+                      selectedCategoryId === category.id
+                        ? "ring-2 ring-blue-600 border-transparent shadow-md"
+                        : "border-gray-200"
+                    }`}
+                  >
+                    <div className="h-40 w-full bg-gray-100 overflow-hidden relative">
+                      <div className="absolute inset-0 bg-gray-900/10 group-hover:bg-transparent transition-colors z-10"></div>
+                      <img
+                        src={
+                          "https://img.freepik.com/premium-photo/male-hand-touching-service-concept_220873-7591.jpg"
+                        }
+                        alt={category.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
+                        onError={(e) => {
+                          e.target.src =
+                            "https://images.unsplash.com/photo-1542013936693-884638332954?auto=format&fit=crop&w=600&q=80";
+                        }}
+                      />
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-lg font-bold text-gray-900 mb-1">
+                        {category.name}
+                      </h3>
+                      <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
+                        {category.description}
+                      </p>
+                    </div>
+
+                    {selectedCategoryId === category.id && (
+                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-blue-600 p-1.5 rounded-full shadow-sm">
+                        <CheckCircle2 size={18} />
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* ========================================== */}
+        {/* 5. PROVIDER GRID SECTION                   */}
         {/* ========================================== */}
         <section
           id="providers-section"
-          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 bg-white rounded-3xl shadow-sm border border-gray-100"
+          className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-24"
         >
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <h2 className="text-3xl font-bold text-gray-800">
-              {selectedCategoryId
-                ? "Filtered Providers"
-                : "Top Rated Providers"}
-            </h2>
+          <div className="bg-white rounded-3xl shadow-sm border border-gray-200 p-6 md:p-10">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-10 gap-6">
+              <div>
+                <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
+                  {selectedCategoryId
+                    ? "Filtered Professionals"
+                    : "Top Rated Professionals"}
+                </h2>
+                <p className="text-gray-500 mt-2">
+                  Hire highly-rated experts in your area.
+                </p>
+              </div>
 
-            {/* Quick Pill Filters */}
-            <div className="flex flex-wrap gap-2">
-              <button
-                onClick={() => handleCategoryClick("")}
-                className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors border ${
-                  selectedCategoryId === ""
-                    ? "bg-gray-800 text-white border-gray-800"
-                    : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
-                }`}
-              >
-                All
-              </button>
-              {categories.map((cat) => (
+              <div className="flex flex-wrap gap-2">
                 <button
-                  key={cat.id}
-                  onClick={() => handleCategoryClick(cat.id)}
-                  className={`px-5 py-2 rounded-full text-sm font-semibold transition-colors border ${
-                    selectedCategoryId === cat.id
-                      ? "bg-gray-800 text-white border-gray-800"
-                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                  onClick={() => handleCategoryClick("")}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
+                    selectedCategoryId === ""
+                      ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                      : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
                   }`}
                 >
-                  {cat.name}
+                  All
                 </button>
-              ))}
+                {categories.map((cat) => (
+                  <button
+                    key={cat.id}
+                    onClick={() => handleCategoryClick(cat.id)}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors border ${
+                      selectedCategoryId === cat.id
+                        ? "bg-gray-900 text-white border-gray-900 shadow-sm"
+                        : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                    }`}
+                  >
+                    {cat.name}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
 
-          {error && (
-            <div className="bg-red-50 text-red-600 p-4 rounded-lg mb-6">
-              {error}
-            </div>
-          )}
+            {isLoading && providers.length === 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {[1, 2, 3].map((n) => (
+                  <div
+                    key={n}
+                    className="bg-gray-50 rounded-2xl h-48 border border-gray-100 animate-pulse"
+                  ></div>
+                ))}
+              </div>
+            ) : displayedProviders.length === 0 ? (
+              <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-200 border-dashed">
+                <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+                <h3 className="text-lg font-bold text-gray-900">
+                  No professionals found
+                </h3>
+                <p className="text-gray-500 mt-1">
+                  Try selecting a different category.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {displayedProviders.map((provider) => (
+                  <div
+                    key={provider.profile_id}
+                    className="group bg-white rounded-2xl border border-gray-200 p-6 flex flex-col hover:shadow-xl hover:border-blue-200 transition-all duration-300"
+                  >
+                    <div className="flex-1">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <h3 className="text-xl font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+                            {provider.name}
+                          </h3>
+                          <p className="text-sm font-medium text-gray-500 mt-1 flex items-center gap-1">
+                            {provider.category_name}
+                          </p>
+                        </div>
 
-          {isLoading && providers.length === 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="bg-gray-100 rounded-xl h-48 border border-gray-200 animate-pulse"
-                ></div>
-              ))}
-            </div>
-          ) : displayedProviders.length === 0 ? (
-            <div className="text-center py-16 bg-gray-50 rounded-xl border border-gray-100 border-dashed">
-              <div className="text-4xl mb-3">🔍</div>
-              <h3 className="text-lg font-bold text-gray-800">
-                No providers found
-              </h3>
-              <p className="text-gray-500 mt-2">
-                Try selecting a different category or check back later.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* 🌟 MAPPED OVER THE FILTERED ARRAY HERE */}
-              {displayedProviders.map((provider) => (
-                <div
-                  key={provider.profile_id}
-                  className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 flex flex-col hover:shadow-lg transition-shadow"
-                >
-                  <div className="flex-1">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-lg font-bold text-gray-800">
-                          {provider.name}
-                        </h3>
-                        <p className="text-sm font-semibold text-blue-600 mt-1">
-                          {provider.category_name}
-                        </p>
+                        {/* 🌟 ACTUAL DYNAMIC RATING LOGIC HERE */}
+                        {/* 🌟 BULLETPROOF DYNAMIC RATING LOGIC */}
+                        <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
+                          <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                          <span className="text-sm font-bold text-gray-700">
+                            {/* Checks for both snake_case and camelCase, defaults to "New" if 0 */}
+                            {provider.average_rating > 0 ||
+                            provider.averageRating > 0
+                              ? Number(
+                                  provider.average_rating ||
+                                    provider.averageRating
+                                ).toFixed(1)
+                              : "New"}
+                          </span>
+
+                          {(provider.total_reviews > 0 ||
+                            provider.totalReviews > 0) && (
+                            <span className="text-xs font-medium text-gray-400 ml-0.5">
+                              ({provider.total_reviews || provider.totalReviews}
+                              )
+                            </span>
+                          )}
+                        </div>
                       </div>
-                      <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1.5 rounded-full uppercase tracking-wider">
-                        Available
-                      </span>
+                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                        {provider.bio ||
+                          "No description provided. Ready to work!"}
+                      </p>
                     </div>
-                    <p className="text-gray-600 text-sm mt-4 line-clamp-3">
-                      {provider.bio}
-                    </p>
-                  </div>
 
-                  <div className="mt-6 pt-6 border-t border-gray-100">
-                    <Link
-                      to={`/customer/provider/${provider.profile_id}`}
-                      className="block w-full text-center bg-blue-50 text-blue-700 font-bold py-2.5 rounded-lg hover:bg-blue-600 hover:text-white transition-colors border border-blue-100 hover:border-blue-600"
-                    >
-                      View Profile & Book
-                    </Link>
+                    <div className="mt-6 pt-6 border-t border-gray-100">
+                      <Link
+                        to={`/customer/provider/${provider.profile_id}`}
+                        className="flex items-center justify-center gap-2 w-full bg-gray-50 text-gray-900 font-semibold py-3 rounded-xl hover:bg-gray-900 hover:text-white transition-colors border border-gray-200 hover:border-gray-900"
+                      >
+                        View Profile
+                        <ArrowRight size={16} />
+                      </Link>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
+                ))}
+              </div>
+            )}
+          </div>
         </section>
       </main>
 
       {/* ========================================== */}
-      {/* 5. FAQ SECTION                             */}
+      {/* 6. FAQ SECTION                             */}
       {/* ========================================== */}
-      <section className="bg-white py-20 border-t border-gray-200">
+      <section className="bg-white py-24 border-t border-gray-200 mt-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 mb-4">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
               Frequently Asked Questions
             </h2>
             <p className="text-gray-500 text-lg">
@@ -371,28 +394,37 @@ export default function Home() {
             {faqs.map((faq, index) => (
               <div
                 key={index}
-                className="bg-gray-50 border border-gray-200 rounded-xl overflow-hidden transition-all"
+                className={`border rounded-2xl overflow-hidden transition-colors duration-300 ${
+                  activeFaq === index
+                    ? "border-blue-200 bg-blue-50/50"
+                    : "border-gray-200 bg-white hover:border-gray-300"
+                }`}
               >
                 <button
                   onClick={() =>
                     setActiveFaq(activeFaq === index ? null : index)
                   }
-                  className="w-full text-left px-6 py-5 font-bold text-gray-800 flex justify-between items-center focus:outline-none"
+                  className="w-full text-left px-6 py-6 font-semibold text-gray-900 flex justify-between items-center focus:outline-none"
                 >
-                  {faq.q}
-                  <span
-                    className={`text-blue-600 text-xl transition-transform ${
-                      activeFaq === index ? "rotate-45" : ""
+                  <span className="text-lg">{faq.q}</span>
+                  <ChevronDown
+                    className={`text-gray-400 transition-transform duration-300 ${
+                      activeFaq === index ? "rotate-180 text-blue-600" : ""
                     }`}
-                  >
-                    +
-                  </span>
+                  />
                 </button>
-                {activeFaq === index && (
-                  <div className="px-6 pb-5 text-gray-600 leading-relaxed border-t border-gray-200 pt-4 bg-white">
-                    {faq.a}
+
+                <div
+                  className={`grid transition-[grid-template-rows] duration-300 ease-in-out ${
+                    activeFaq === index ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                  }`}
+                >
+                  <div className="overflow-hidden">
+                    <div className="px-6 pb-6 text-gray-600 leading-relaxed">
+                      {faq.a}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             ))}
           </div>

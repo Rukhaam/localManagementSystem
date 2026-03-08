@@ -10,6 +10,10 @@ import {
   logoutUser,
 } from "../controllers/authController.js";
 import { isAuthenticated } from "../middlewares/authMiddleware.js";
+import {
+  registerLimiter,
+  loginLimiter,
+} from "../middlewares/rateLimiterMiddleware.js";
 
 import {
   validateRequest,
@@ -19,8 +23,14 @@ import {
 
 const router = express.Router();
 
-router.post("/register", registerRules, validateRequest, registerUser);
-router.post("/login", loginRules, validateRequest, loginUser);
+router.post(
+  "/register",
+  registerLimiter,
+  registerRules,
+  validateRequest,
+  registerUser
+);
+router.post("/login", loginLimiter, loginRules, validateRequest, loginUser);
 
 router.get("/me", isAuthenticated, getMe);
 router.post("/verify-otp", verifyOTP);

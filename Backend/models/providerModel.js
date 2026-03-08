@@ -36,6 +36,8 @@ export const approveProviderInDB = async (profileId, isApproved) => {
 };
 
 // 6. Fetch all approved & available providers (For Customers browsing)
+// backend/models/providerModel.js
+
 export const getAllApprovedProviders = async (categoryId = null) => {
   let query = `
   SELECT 
@@ -45,10 +47,13 @@ export const getAllApprovedProviders = async (categoryId = null) => {
     u.name, 
     u.email, 
     c.name as category_name, 
-    p.bio 
+    p.bio,
+    COALESCE(ROUND(AVG(r.rating), 1), 0) AS average_rating,
+    COUNT(r.id) AS total_reviews
   FROM provider_profiles p
   JOIN users u ON p.user_id = u.id
   JOIN categories c ON p.category_id = c.id
+  LEFT JOIN reviews r ON p.user_id = r.provider_id 
   WHERE p.is_approved = TRUE AND p.is_available = TRUE
 `;
 
@@ -57,6 +62,8 @@ export const getAllApprovedProviders = async (categoryId = null) => {
     query += " AND p.category_id = ?";
     params.push(categoryId);
   }
+
+  query += " GROUP BY p.id, p.user_id, p.category_id, u.name, u.email, c.name, p.bio";
 
   const [rows] = await pool.query(query, params);
   return rows;
