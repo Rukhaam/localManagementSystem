@@ -27,7 +27,7 @@ export const forgotPasswordAPI = async (email) => {
 export const checkAuthAPI = async () => {
     const response = await api.get('/auth/me');
     return response.data;
-  };// Add this to your authApi.js file
+  };
 export const logoutAPI = async () => {
   const response = await api.get('/auth/logout'); 
   return response.data;

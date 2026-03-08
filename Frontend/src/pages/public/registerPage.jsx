@@ -8,7 +8,7 @@ export default function Register() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [showPassword, setShowPassword] = useState(false); // 🌟 Added password toggle state
+  const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -40,7 +40,6 @@ export default function Register() {
     } finally {
       setIsLoading(false);
     }
-
   };
 
   const handleOtpSubmit = async (e) => {

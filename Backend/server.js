@@ -2,9 +2,8 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import dotenv from "dotenv";
-import helmet from "helmet"; // 🛡️ Import Helmet
-import rateLimit from "express-rate-limit"; // 🛡️ Import Rate Limiter
-import hpp from "hpp"; // 🛡️ Import HPP
+import helmet from "helmet"; 
+import hpp from "hpp"; 
 
 import authRoutes from "./routes/authRoutes.js";
 import categoryRoutes from "./routes/categoryRoutes.js";

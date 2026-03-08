@@ -14,7 +14,7 @@ import { useToast } from "../../hooks/toastHook";
 import { ShieldCheck } from "lucide-react";
 
 export default function ProviderProfile() {
-  const { id } = useParams(); // This is the profile_id from the URL
+  const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { showSuccess, showError, showLoading, dismissToast } = useToast();
@@ -38,10 +38,8 @@ export default function ProviderProfile() {
     notes: "",
   });
 
-  // 1. Find the provider using the profile_id from the URL
   const provider = providers.find((p) => p.profile_id === Number(id));
 
-  // 2. Fetch providers if we don't have them yet
   useEffect(() => {
     if (providers.length === 0) {
       dispatch(fetchActiveProviders(""));
@@ -75,7 +73,7 @@ export default function ProviderProfile() {
       address: formData.address,
       scheduledDate: formData.scheduledDate,
       notes: formData.notes,
-      price: BASE_PRICE, // 🌟 Pass it directly to the backend
+      price: BASE_PRICE, 
     };
 
     const loadingId = showLoading("Confirming your booking...");
@@ -323,7 +321,9 @@ export default function ProviderProfile() {
 
               {/* 🌟 NEW: Pricing Summary Box */}
               <div className="bg-blue-50/50 border border-blue-100 rounded-xl p-5 mb-6 mt-4">
-                <h4 className="text-sm font-bold text-gray-900 mb-3">Booking Summary</h4>
+                <h4 className="text-sm font-bold text-gray-900 mb-3">
+                  Booking Summary
+                </h4>
                 <div className="flex justify-between items-center text-sm text-gray-600 mb-2">
                   <span>Base Visiting Fee</span>
                   <span className="font-semibold">₹{BASE_PRICE}</span>
@@ -333,11 +333,18 @@ export default function ProviderProfile() {
                   <span className="text-green-600 font-semibold">Free</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="font-extrabold text-gray-900">Total Estimated Price</span>
-                  <span className="font-extrabold text-blue-600 text-lg">₹{BASE_PRICE}</span>
+                  <span className="font-extrabold text-gray-900">
+                    Total Estimated Price
+                  </span>
+                  <span className="font-extrabold text-blue-600 text-lg">
+                    ₹{BASE_PRICE}
+                  </span>
                 </div>
                 <p className="text-xs text-gray-500 mt-3 flex items-start gap-1.5">
-                  <ShieldCheck size={14} className="shrink-0 text-blue-500 mt-0.5" />
+                  <ShieldCheck
+                    size={14}
+                    className="shrink-0 text-blue-500 mt-0.5"
+                  />
                   You will pay the provider directly after the job is completed.
                 </p>
               </div>

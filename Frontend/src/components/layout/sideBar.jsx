@@ -20,7 +20,6 @@ export default function Sidebar() {
 
   const showSidebar = isAuthenticated && user && isDashboardRoute;
 
-  // 🌟 If we shouldn't show the sidebar, just instantly return null (No animations)
   if (!showSidebar) return null;
 
   const getLinks = () => {

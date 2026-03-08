@@ -17,12 +17,11 @@ import {
   passwordResetTemplate,
 } from "../utils/emailtemplate.js";
 
-// Helper function for cookie options
 const getCookieOptions = () => ({
   expires: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
   httpOnly: true,
-  secure: true,   
-  sameSite: "none",  
+  secure: true,
+  sameSite: "none",
 });
 
 // 1. REGISTER USER
@@ -36,7 +35,10 @@ export const registerUser = catchAsyncErrors(async (req, res, next) => {
 
   const salt = await bcrypt.genSalt(10);
   const hashedPassword = await bcrypt.hash(password, salt);
-  const userRole = role && ["customer", "provider", "admin"].includes(role) ? role : "customer";
+  const userRole =
+    role && ["customer", "provider", "admin"].includes(role)
+      ? role
+      : "customer";
 
   await createUser(name, email, hashedPassword, userRole);
 
@@ -128,18 +130,18 @@ export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
   if (!user) return next(new ErrorHandler("User not found", 404));
 
   // 🌟 Generates the 6-digit code
-  const otp = generateVerificationCode(); 
+  const otp = generateVerificationCode();
   const otpExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes
 
-  // Saves the 6-digit code to DB
   await updateUserOTP(email, otp, otpExpires);
 
-  // Uses the 6-digit code in the email template
   const message = passwordResetTemplate(user.name, otp);
 
   try {
     await sendEmail({ email, subject: "Password Reset Code", message });
-    res.status(200).json({ success: true, message: "Reset code sent to your email." });
+    res
+      .status(200)
+      .json({ success: true, message: "Reset code sent to your email." });
   } catch (error) {
     console.error("🚨 EMAIL ERROR:", error);
     await clearUserOTP(email);
@@ -154,7 +156,6 @@ export const resetPassword = catchAsyncErrors(async (req, res, next) => {
 
   if (!user) return next(new ErrorHandler("User not found", 404));
 
-  // 🌟 Directly compares the 6-digit token to the user's saved OTP
   if (user.otp !== token || new Date(user.otp_expires) < new Date()) {
     return next(new ErrorHandler("Invalid or expired reset code", 400));
   }
@@ -172,25 +173,28 @@ export const resetPassword = catchAsyncErrors(async (req, res, next) => {
 });
 
 // 6. UPDATE PASSWORD (Logged In)
-export const updatePasswordLoggedIn = catchAsyncErrors(async (req, res, next) => {
-  const { oldPassword, newPassword } = req.body;
-  const user = await getUserById(req.user.id);
+export const updatePasswordLoggedIn = catchAsyncErrors(
+  async (req, res, next) => {
+    const { oldPassword, newPassword } = req.body;
+    const user = await getUserById(req.user.id);
 
-  const isMatch = await bcrypt.compare(oldPassword, user.password);
-  if (!isMatch) return next(new ErrorHandler("Old password is incorrect", 400));
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch)
+      return next(new ErrorHandler("Old password is incorrect", 400));
 
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(newPassword, salt);
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
 
-  await updatePasswordInDB(user.id, hashedPassword);
+    await updatePasswordInDB(user.id, hashedPassword);
 
-  res.status(200).json({ success: true, message: "Password updated successfully" });
-});
+    res
+      .status(200)
+      .json({ success: true, message: "Password updated successfully" });
+  }
+);
 
 // GET CURRENT USER
 export const getMe = catchAsyncErrors(async (req, res, next) => {
-  // If the user reaches this point, the `isAuthenticated` middleware 
-  // has already verified their cookie and attached them to req.user!
   res.status(200).json({
     success: true,
     user: {
@@ -198,7 +202,7 @@ export const getMe = catchAsyncErrors(async (req, res, next) => {
       name: req.user.name,
       email: req.user.email,
       role: req.user.role,
-    }
+    },
   });
 });
 
@@ -209,7 +213,7 @@ export const logoutUser = catchAsyncErrors(async (req, res, next) => {
     .cookie("token", null, {
       expires: new Date(Date.now()),
       httpOnly: true,
-      secure: true,     
+      secure: true,
       sameSite: "none",
     })
     .json({

@@ -8,8 +8,7 @@ import {
   import { catchAsyncErrors } from "../middlewares/catchAsyncErrorMiddleware.js";
   import { ErrorHandler } from "../middlewares/errorMiddleware.js";
   
-  // @desc    Create a new category (Admin only)
-  // @route   POST /api/categories
+
   export const createCategory = catchAsyncErrors(async (req, res, next) => {
     const { name, description } = req.body;
   
@@ -26,8 +25,7 @@ import {
     });
   });
   
-  // @desc    Get all categories (Public - Customers need to see these to browse)
-  // @route   GET /api/categories
+
   export const getCategories = catchAsyncErrors(async (req, res, next) => {
     const categories = await fetchAllCategories();
   
@@ -38,8 +36,7 @@ import {
     });
   });
   
-  // @desc    Update a category (Admin only)
-  // @route   PUT /api/categories/:id
+
   export const updateCategory = catchAsyncErrors(async (req, res, next) => {
     const { name, description } = req.body;
     const categoryId = req.params.id;
@@ -58,7 +55,6 @@ import {
   });
   
 
-  // route   DELETE /api/categories/:id
   export const deleteCategory = catchAsyncErrors(async (req, res, next) => {
     const categoryId = req.params.id;
   

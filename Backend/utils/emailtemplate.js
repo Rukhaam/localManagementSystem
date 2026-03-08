@@ -1,4 +1,3 @@
-// utils/emailTemplates.js
 
 export const verificationEmailTemplate = (name, otp) => {
     return `
