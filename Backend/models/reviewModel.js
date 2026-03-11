@@ -1,6 +1,5 @@
 import pool from "../config/db.js";
 
-// 1. Insert a new review
 export const insertReview = async (
   bookingId,
   customerId,
@@ -22,7 +21,6 @@ export const insertReview = async (
   return result.insertId;
 };
 
-// 2. Get all reviews for a specific provider (includes customer name)
 export const getReviewsByProvider = async (providerId) => {
   const query = `
     SELECT r.id, r.rating, r.comment, r.created_at, u.name as customer_name 
@@ -35,7 +33,6 @@ export const getReviewsByProvider = async (providerId) => {
   return rows;
 };
 
-// 3. Get average rating for a provider
 export const getProviderAverageRating = async (providerId) => {
   const query =
     "SELECT AVG(rating) as averageRating, COUNT(*) as totalReviews FROM reviews WHERE provider_id = ?";
@@ -43,7 +40,6 @@ export const getProviderAverageRating = async (providerId) => {
   return rows[0];
 };
 
-// 4. Check if a review already exists for a booking
 export const getReviewByBookingId = async (bookingId) => {
   const query = "SELECT * FROM reviews WHERE booking_id = ?";
   const [rows] = await pool.query(query, [bookingId]);

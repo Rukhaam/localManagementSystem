@@ -46,12 +46,13 @@ Cloudinary: Cloud storage for job completion images.
 Express Rate Limit: Security middleware to prevent brute-force attacks on auth routes.
 
 🛠️ Installation & Setup
+
 1. Clone the Repository
-Bash
-git clone https://github.com/YourUsername/LocalHub.git
-cd LocalHub
+   Bash
+   git clone https://github.com/YourUsername/LocalHub.git
+   cd LocalHub
 2. Backend Configuration
-Create a .env file in the backend/ directory:
+   Create a .env file in the backend/ directory:
 
 Code snippet
 PORT=5000
@@ -64,13 +65,11 @@ JWT_SECRET=your_super_secret_key
 FRONTEND_URL=http://localhost:5173
 CLOUDINARY_CLOUD_NAME=your_name
 CLOUDINARY_API_KEY=your_key
-CLOUDINARY_API_SECRET=your_secret
-3. Frontend Configuration
+CLOUDINARY_API_SECRET=your_secret 3. Frontend Configuration
 Create a .env file in the Frontend/ directory:
 
 Code snippet
-VITE_API_URL=http://localhost:5000/api
-4. Install Dependencies & Run
+VITE_API_URL=http://localhost:5000/api 4. Install Dependencies & Run
 In Backend:
 
 Bash

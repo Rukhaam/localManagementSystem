@@ -50,7 +50,6 @@ export default function ProviderProfile() {
     };
   }, [dispatch, providers.length]);
 
-  // Wait until we find the provider, THEN fetch reviews using their USER_ID!
   useEffect(() => {
     if (provider?.user_id) {
       dispatch(fetchProviderReviews(provider.user_id));
@@ -61,8 +60,7 @@ export default function ProviderProfile() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // 🌟 Define your platform's standard base fee
-  const BASE_PRICE = 299;
+  const BASE_PRICE = provider?.base_price ? Number(provider.base_price) : 0;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -73,7 +71,7 @@ export default function ProviderProfile() {
       address: formData.address,
       scheduledDate: formData.scheduledDate,
       notes: formData.notes,
-      price: BASE_PRICE, 
+      price: BASE_PRICE,
     };
 
     const loadingId = showLoading("Confirming your booking...");

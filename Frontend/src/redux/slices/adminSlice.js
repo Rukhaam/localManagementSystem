@@ -3,6 +3,7 @@ import {
   getAllProvidersAdminAPI,
   approveProviderAPI,
   createCategoryAPI,
+  toggleUserStatusAPI,
   deleteCategoryAPI,
   getAllUsersAPI,
   getAllBookingsAPI,
@@ -22,7 +23,17 @@ export const fetchAllProviders = createAsyncThunk(
     }
   }
 );
-
+export const toggleUserStatus = createAsyncThunk(
+  "admin/toggleUserStatus",
+  async ({ userId, isSuspended }, { rejectWithValue }) => {
+    try {
+      const response = await toggleUserStatusAPI(userId, isSuspended);
+      return { userId, isSuspended, message: response.message };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update user status");
+    }
+  }
+);
 export const toggleProviderApproval = createAsyncThunk(
   "admin/toggleApproval",
   async ({ profileId, isApproved }, { rejectWithValue }) => {
@@ -130,6 +141,13 @@ const adminSlice = createSlice({
           state.providers[index].is_approved = action.payload.isApproved
             ? 1
             : 0;
+        }
+      })
+      .addCase(toggleUserStatus.fulfilled, (state, action) => {
+        const { userId, isSuspended } = action.payload;
+        const user = state.users.find(u => u.id === userId);
+        if (user) {
+          user.is_suspended = isSuspended;
         }
       })
       // Categories

@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   ArrowRight,
   ShieldCheck,
+  MapPin,
 } from "lucide-react";
 import {
   fetchCategories,
@@ -18,27 +19,44 @@ import {
 
 import { featuresData } from "../../utils/homeData";
 import { faqs } from "../../utils/faqsData";
+import AsyncSelect from "react-select/async";
+
+let searchTimeout;
 
 export default function Home() {
   const dispatch = useDispatch();
 
-  const { categories, providers, selectedCategoryId, isLoading, error } =
+  const { categories, providers, pagination, selectedCategoryId, isLoading, error } =
     useSelector((state) => state.explore);
 
   const [activeFaq, setActiveFaq] = useState(null);
+  const [searchArea, setSearchArea] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     if (categories.length === 0) {
       dispatch(fetchCategories());
     }
-    if (providers.length === 0) {
-      dispatch(fetchActiveProviders(""));
+    
+
+    if (providers.length === 0 && !selectedCategoryId && !searchArea) {
+      dispatch(fetchActiveProviders({ page: 1 }));
     }
-  }, [dispatch, categories.length, providers.length]);
+  }, [dispatch, categories.length, providers.length, selectedCategoryId, searchArea]);
 
   const handleCategoryClick = (categoryId) => {
     const newCategoryId = selectedCategoryId === categoryId ? "" : categoryId;
     dispatch(setSelectedCategory(newCategoryId));
+    
+    setCurrentPage(1);
+
+    dispatch(
+      fetchActiveProviders({
+        categoryId: newCategoryId,
+        serviceArea: searchArea,
+        page: 1 
+      })
+    );
 
     setTimeout(() => {
       document
@@ -47,11 +65,35 @@ export default function Home() {
     }, 100);
   };
 
-  const displayedProviders = selectedCategoryId
-    ? providers.filter(
-        (provider) => provider.category_id === selectedCategoryId
-      )
-    : providers;
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    setCurrentPage(1);
+    
+    dispatch(
+      fetchActiveProviders({
+        categoryId: selectedCategoryId,
+        serviceArea: searchArea,
+        page: 1 
+      })
+    );
+
+    document
+      .getElementById("providers-section")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const handlePageChange = (newPage) => {
+    setCurrentPage(newPage);
+    dispatch(
+      fetchActiveProviders({ 
+        categoryId: selectedCategoryId, 
+        serviceArea: searchArea, 
+        page: newPage 
+      })
+    );
+    
+    document.getElementById("providers-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   const marqueeItems = [
     ...categories,
@@ -62,7 +104,7 @@ export default function Home() {
 
   return (
     <div className="flex flex-col min-h-screen bg-[#fafafa] w-full font-sans selection:bg-blue-100 selection:text-blue-900">
-      {/* 1. HERO SECTION                            */}
+      {/* 1. HERO SECTION */}
       <section className="relative overflow-hidden bg-white border-b border-gray-200 py-20 md:py-32">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#f0f0f0_1px,transparent_1px),linear-gradient(to_bottom,#f0f0f0_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-40 pointer-events-none"></div>
 
@@ -84,35 +126,119 @@ export default function Home() {
             verified local professionals instantly and get the job done right.
           </p>
 
-          <div className="animate-fade-in-up delay-300 opacity-0 mt-10 flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
-            <button
-              onClick={() =>
-                document
-                  .getElementById("providers-section")
-                  ?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="group flex items-center justify-center gap-2 bg-gray-900 text-white font-medium text-lg px-8 py-4 rounded-xl hover:bg-gray-800 transition-all shadow-xl shadow-gray-900/10 hover:shadow-gray-900/20"
+          <div className="animate-fade-in-up delay-300 opacity-0 mt-10 w-full max-w-2xl">
+            <form
+              onSubmit={handleSearchSubmit}
+              className="relative flex items-center w-full shadow-xl shadow-gray-900/5 rounded-2xl bg-white border border-gray-200 hover:border-blue-300 transition-colors focus-within:border-blue-500 focus-within:ring-4 focus-within:ring-blue-500/20"
             >
-              <Search size={20} />
-              Find a Professional
-            </button>
-            <Link
-              to="/register"
-              className="group flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-200 font-medium text-lg px-8 py-4 rounded-xl hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-            >
-              Become a Provider
-              <ArrowRight
-                size={20}
-                className="group-hover:translate-x-1 transition-transform"
-              />
-            </Link>
+              <div className="pl-6 pr-1 text-blue-600">
+                <MapPin size={24} />
+              </div>
+
+              <div className="flex-1">
+                <AsyncSelect
+                  cacheOptions
+                  loadOptions={(inputValue) => {
+                    return new Promise((resolve) => {
+                      if (!inputValue || inputValue.length < 3)
+                        return resolve([]);
+
+                      clearTimeout(searchTimeout);
+
+                      const GEOAPIFY_API_KEY = import.meta.env
+                        .VITE_GEOAPIFY_API_KEY;
+
+                      searchTimeout = setTimeout(async () => {
+                        try {
+                          const res = await fetch(
+                            `https://api.geoapify.com/v1/geocode/autocomplete?text=${encodeURIComponent(inputValue)}&type=city&filter=countrycode:in&format=json&apiKey=${GEOAPIFY_API_KEY}`
+                          );
+                          const data = await res.json();
+                          if (data.results) {
+                            const options = data.results.map((place) => ({
+                              label: place.state
+                                ? `${place.city}, ${place.state}`
+                                : place.city,
+                              value: place.city,
+                            }));
+
+                            const uniqueOptions = Array.from(
+                              new Set(options.map((a) => a.value))
+                            )
+                              .map((value) =>
+                                options.find((a) => a.value === value)
+                              )
+                              .filter((opt) => opt.value);
+
+                            resolve(uniqueOptions);
+                          } else {
+                            resolve([]);
+                          }
+                        } catch (err) {
+                          resolve([]);
+                        }
+                      }, 400);
+                    });
+                  }}
+                  onChange={(option) =>
+                    setSearchArea(option ? option.value : "")
+                  }
+                  placeholder="Search by city or area..."
+                  noOptionsMessage={() => "Type a city name..."}
+                  isClearable
+                  styles={{
+                    control: (provided) => ({
+                      ...provided,
+                      border: "none",
+                      boxShadow: "none",
+                      backgroundColor: "transparent",
+                      cursor: "text",
+                      minHeight: "60px",
+                    }),
+                    input: (provided) => ({
+                      ...provided,
+
+                      fontSize: "1.125rem",
+                      fontWeight: "500",
+                      color: "#111827",
+                    }),
+                    placeholder: (provided) => ({
+                      ...provided,
+                      fontSize: "1.125rem",
+                      color: "#9ca3af",
+                    }),
+                    menu: (provided) => ({
+                      ...provided,
+                      borderRadius: "1rem",
+                      overflow: "hidden",
+                      boxShadow:
+                        "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)",
+                      marginTop: "8px",
+                      zIndex: 50,
+                    }),
+                    option: (provided, state) => ({
+                      ...provided,
+                      backgroundColor: state.isFocused ? "#eff6ff" : "white",
+                      color: "#111827",
+                      padding: "12px 16px",
+                      cursor: "pointer",
+                    }),
+                  }}
+                />
+              </div>
+
+              <button
+                type="submit"
+                className=" h-[52px] w-[20px] bg-blue-600 hover:bg-blue-700 text-white font-bold text-lg px-8 transition-colors md:h-[52px] md:w-[100px] flex items-center justify-center md:m-1.5 rounded-xl shrink-0"
+              >
+                Search
+              </button>
+            </form>
           </div>
         </div>
       </section>
 
-      {/* ========================================== */}
-      {/* 2. PURE CSS MARQUEE                        */}
-      {/* ========================================== */}
+      {/* 2. PURE CSS MARQUEE */}
       <div className="relative bg-white overflow-hidden py-8 border-b border-gray-200 flex items-center">
         <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
@@ -141,9 +267,7 @@ export default function Home() {
       </div>
 
       <main className="flex-1 w-full pb-24">
-        {/* ========================================== */}
-        {/* 3. NEW: SLICK FEATURES GRID                */}
-        {/* ========================================== */}
+        {/* 3. SLICK FEATURES GRID */}
         <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
           <div className="mb-16 max-w-2xl">
             <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
@@ -175,9 +299,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ========================================== */}
-        {/* 4. VISUAL CATEGORIES GRID                  */}
-        {/* ========================================== */}
+        {/* 4. VISUAL CATEGORIES GRID */}
         <section className="bg-white border-y border-gray-200 py-24">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
@@ -245,9 +367,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ========================================== */}
-        {/* 5. PROVIDER GRID SECTION                   */}
-        {/* ========================================== */}
+        {/* 5. PROVIDER GRID SECTION */}
         <section
           id="providers-section"
           className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-24"
@@ -256,12 +376,14 @@ export default function Home() {
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-10 gap-6">
               <div>
                 <h2 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-                  {selectedCategoryId
+                  {selectedCategoryId || searchArea
                     ? "Filtered Professionals"
                     : "Top Rated Professionals"}
                 </h2>
                 <p className="text-gray-500 mt-2">
-                  Hire highly-rated experts in your area.
+                  {searchArea
+                    ? `Showing results for "${searchArea}"`
+                    : "Hire highly-rated experts in your area."}
                 </p>
               </div>
 
@@ -292,7 +414,7 @@ export default function Home() {
               </div>
             </div>
 
-            {isLoading && providers.length === 0 ? (
+            {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((n) => (
                   <div
@@ -301,22 +423,43 @@ export default function Home() {
                   ></div>
                 ))}
               </div>
-            ) : displayedProviders.length === 0 ? (
+            ) : providers.length === 0 ? (
               <div className="text-center py-20 bg-gray-50 rounded-2xl border border-gray-200 border-dashed">
                 <Search className="w-12 h-12 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-gray-900">
                   No professionals found
                 </h3>
                 <p className="text-gray-500 mt-1">
-                  Try selecting a different category.
+                  {searchArea
+                    ? `We couldn't find anyone serving "${searchArea}". Try clearing the search.`
+                    : "Try selecting a different category."}
                 </p>
+
+                {searchArea && (
+                  <button
+                    onClick={() => {
+                      setSearchArea("");
+                      setCurrentPage(1); 
+                      dispatch(
+                        fetchActiveProviders({
+                          categoryId: selectedCategoryId,
+                          serviceArea: "",
+                          page: 1,
+                        })
+                      );
+                    }}
+                    className="mt-4 px-6 py-2 bg-blue-50 text-blue-600 font-bold rounded-xl border border-blue-100 hover:bg-blue-100 transition-colors"
+                  >
+                    Clear Search
+                  </button>
+                )}
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {displayedProviders.map((provider) => (
+                {providers.map((provider) => (
                   <div
                     key={provider.profile_id}
-                    className="group bg-white rounded-2xl border border-gray-200 p-6 flex flex-col hover:shadow-xl hover:border-blue-200 transition-all duration-300"
+                    className="group bg-white rounded-2xl border border-gray-200 p-6 flex flex-col hover:shadow-xl hover:border-blue-200 transition-all duration-300 relative overflow-hidden"
                   >
                     <div className="flex-1">
                       <div className="flex justify-between items-start mb-4">
@@ -329,12 +472,9 @@ export default function Home() {
                           </p>
                         </div>
 
-                        {/* 🌟 ACTUAL DYNAMIC RATING LOGIC HERE */}
-                        {/* 🌟 BULLETPROOF DYNAMIC RATING LOGIC */}
                         <div className="flex items-center gap-1.5 bg-gray-50 px-2 py-1 rounded-lg border border-gray-100">
                           <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
                           <span className="text-sm font-bold text-gray-700">
-                            {/* Checks for both snake_case and camelCase, defaults to "New" if 0 */}
                             {provider.average_rating > 0 ||
                             provider.averageRating > 0
                               ? Number(
@@ -353,13 +493,21 @@ export default function Home() {
                           )}
                         </div>
                       </div>
-                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+
+                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3 mb-4">
                         {provider.bio ||
                           "No description provided. Ready to work!"}
                       </p>
+
+                      {provider.service_area && (
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 bg-gray-50 w-fit px-2.5 py-1 rounded-md border border-gray-100">
+                          <MapPin size={12} className="text-blue-500" />
+                          Serves: {provider.service_area}
+                        </div>
+                      )}
                     </div>
 
-                    <div className="mt-6 pt-6 border-t border-gray-100">
+                    <div className="mt-6 pt-6 border-t border-gray-100 z-10">
                       <Link
                         to={`/customer/provider/${provider.profile_id}`}
                         className="flex items-center justify-center gap-2 w-full bg-gray-50 text-gray-900 font-semibold py-3 rounded-xl hover:bg-gray-900 hover:text-white transition-colors border border-gray-200 hover:border-gray-900"
@@ -372,11 +520,35 @@ export default function Home() {
                 ))}
               </div>
             )}
+
+            {/* Pagination Controls */}
+            {pagination && pagination.totalPages > 1 && (
+              <div className="flex items-center justify-center gap-4 mt-12 border-t border-gray-100 pt-8">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={!pagination.hasPrevPage}
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white transition-all shadow-sm"
+                >
+                  Previous
+                </button>
+                <span className="text-sm font-semibold text-gray-500">
+                  Page <span className="text-gray-900">{pagination.currentPage}</span> of {pagination.totalPages}
+                </span>
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={!pagination.hasNextPage}
+                  className="px-5 py-2.5 rounded-xl text-sm font-bold border border-gray-200 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-40 disabled:hover:bg-white transition-all shadow-sm"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+            
           </div>
         </section>
       </main>
 
-      {/* 6. FAQ SECTION                             */}
+      {/* 6. FAQ SECTION */}
       <section className="bg-white py-24 border-t border-gray-200 mt-24">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">

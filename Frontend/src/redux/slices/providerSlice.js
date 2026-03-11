@@ -91,9 +91,13 @@ const providerSlice = createSlice({
         state.isLoading = false;
         state.successMessage = action.payload.message;
         if (!state.profile) state.profile = {};
-        // Sync local Redux state with what we just sent to DB
+        
         state.profile.category_id = action.payload.profileData.categoryId;
         state.profile.bio = action.payload.profileData.bio;
+        state.profile.service_area = action.payload.profileData.serviceArea; 
+        
+        // 🌟 NEW: Sync the base price!
+        state.profile.base_price = action.payload.profileData.basePrice; 
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.isLoading = false;

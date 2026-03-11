@@ -21,7 +21,6 @@ export const requestBooking = catchAsyncErrors(async (req, res, next) => {
     return next(new ErrorHandler("Provider is currently unavailable or not approved", 400));
   }
 
-  // 🌟 FIX: Pass the price down into the model
   const insertId = await insertBooking(
     customerId, 
     providerId, 

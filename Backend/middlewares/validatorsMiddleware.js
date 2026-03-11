@@ -16,7 +16,6 @@ export const validateRequest = (req, res, next) => {
   next();
 };
 
-// 2. Rules for Authentication
 export const registerRules = [
   body("name")
     .trim()
@@ -28,7 +27,7 @@ export const registerRules = [
     .trim()
     .isEmail()
     .withMessage("Please provide a valid email address")
-    .normalizeEmail(), // Converts to lowercase and removes bad characters
+    .normalizeEmail(),
   body("password")
     .isLength({ min: 6 })
     .withMessage("Password must be at least 6 characters long"),

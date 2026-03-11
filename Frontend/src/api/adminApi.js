@@ -5,7 +5,6 @@ export const getAllProvidersAdminAPI = async () => {
   return response.data;
 };
 
-// Approve or Reject a provider
 export const approveProviderAPI = async (profileId, isApproved) => {
   const response = await api.patch(`/providers/${profileId}/approve`, {
     isApproved,
@@ -30,5 +29,9 @@ export const getAllUsersAPI = async () => {
 
 export const getAllBookingsAPI = async () => {
   const response = await api.get("/admin/bookings"); 
+  return response.data;
+};
+export const toggleUserStatusAPI = async (userId, isSuspended) => {
+  const response = await api.put(`/admin/users/${userId}/status`, { is_suspended: isSuspended });
   return response.data;
 };

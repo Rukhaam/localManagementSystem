@@ -23,9 +23,15 @@ export default function Navbar() {
     }
   };
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+// 🌟 FIX: Target the specific main container that actually handles the scrolling
+const scrollToTop = () => {
+  const scrollContainer = document.getElementById("main-scroll-container");
+  if (scrollContainer) {
+    scrollContainer.scrollTo({ top: 0, behavior: "smooth" });
+  } else {
+    window.scrollTo({ top: 0, behavior: "smooth" }); // Fallback
+  }
+};
 
   const getDashboardLink = () => {
     if (!user) return "/login";
@@ -60,12 +66,12 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 transition-all">
+    <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-gray-200/60 transition-all"  >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 md:h-20">
-          <Link to="/" className="flex items-center gap-2.5 group">
+          <Link to="/" className="flex items-center gap-2.5 group" onClick={scrollToTop}>
             <div className="w-9 h-9 bg-gradient-to-br from-gray-900 to-gray-700 rounded-xl flex items-center justify-center shadow-md group-hover:shadow-lg group-hover:scale-105 transition-all">
-              <span className="text-white font-extrabold text-xl leading-none ">
+              <span className="text-white font-extrabold text-xl leading-none " >
                 L
               </span>
             </div>

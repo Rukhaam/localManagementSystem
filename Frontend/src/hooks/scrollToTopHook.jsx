@@ -12,7 +12,7 @@ export default function ScrollToTop() {
     } else {
       window.scrollTo({ top: 0, left: 0, behavior: "instant" });
     }
-  }, [pathname]); // This triggers every time the URL changes
+  }, [pathname]);
 
   return null;
 }

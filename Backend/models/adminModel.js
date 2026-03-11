@@ -1,9 +1,11 @@
 import db from "../config/db.js"; 
+import pool from "../config/db.js";
 
 class AdminModel {
   static async getAllUsers() {
+    // 🌟 FIX 1: Added is_suspended to the SELECT query so React gets the data on refresh!
     const query = `
-      SELECT id, name, email, role, created_at 
+      SELECT id, name, email, role, created_at, is_suspended 
       FROM users 
       ORDER BY created_at DESC
     `;
@@ -25,5 +27,14 @@ class AdminModel {
     return bookings;
   }
 }
+
+export const updateUserSuspensionStatusInDB = async (userId, isSuspended) => {
+  // 🌟 FIX 2: Changed this back to an UPDATE statement!
+  const query = "UPDATE users SET is_suspended = ? WHERE id = ?";
+  const statusValue = isSuspended ? 1 : 0; 
+  
+  const [result] = await pool.query(query, [statusValue, userId]);
+  return result;
+};
 
 export default AdminModel;

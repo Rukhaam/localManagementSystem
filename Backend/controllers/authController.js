@@ -99,6 +99,11 @@ export const loginUser = catchAsyncErrors(async (req, res, next) => {
   const user = await getUserByEmail(email);
   if (!user) return next(new ErrorHandler("Invalid email or password", 401));
 
+  // 🌟 NEW: Instantly block suspended users from logging in
+  if (user.is_suspended) {
+    return next(new ErrorHandler("Your account has been suspended by the Admin. Please contact support.", 403));
+  }
+
   if (!user.is_verified)
     return next(new ErrorHandler("Please verify your email first", 401));
 
@@ -118,10 +123,10 @@ export const loginUser = catchAsyncErrors(async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        is_suspended: user.is_suspended, // 🌟 Good practice to send this to the frontend
       },
     });
 });
-
 // 4. FORGOT PASSWORD
 export const forgotPassword = catchAsyncErrors(async (req, res, next) => {
   const { email } = req.body;

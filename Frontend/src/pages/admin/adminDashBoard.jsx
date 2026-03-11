@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import useDebounce from "../../hooks/debounceHook";
 import usePagination from "../../hooks/usePagination";
-import { fetchAllUsers, fetchAllBookings } from "../../redux/slices/adminSlice";
+import { fetchAllUsers, fetchAllBookings, toggleUserStatus } from "../../redux/slices/adminSlice";
+import { useToast } from "../../hooks/toastHook";
 import LoadingSpinner from "../../components/common/loadingSpinner";
 import { 
   Users, 
@@ -15,12 +16,15 @@ import {
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
+  const { showSuccess, showError, showLoading, dismissToast } = useToast();
 
   const {
     users = [],
     allBookings = [],
     isLoading,
   } = useSelector((state) => state.admin);
+
+
 
   const [activeTab, setActiveTab] = useState("users");
   const [searchTerm, setSearchTerm] = useState("");
@@ -62,6 +66,21 @@ export default function AdminDashboard() {
   useEffect(() => {
     jumpUser(1);
   }, [debouncedSearchTerm]);
+
+  const handleSuspendToggle = async (userId, currentStatus) => {
+    const loadingId = showLoading(currentStatus ? "Reactivating user..." : "Suspending user...");
+    
+    // Ensure we are passing a strict boolean to the Redux slice
+    const res = await dispatch(toggleUserStatus({ userId, isSuspended: !currentStatus }));
+    
+    dismissToast(loadingId);
+
+    if (res.meta.requestStatus === "fulfilled") {
+      showSuccess(res.payload.message || "User status updated.");
+    } else {
+      showError(res.payload || "Failed to update user status.");
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 pb-12">
@@ -133,7 +152,9 @@ export default function AdminDashboard() {
                       <div key={u.id} className="flex flex-col md:grid md:grid-cols-5 md:items-center px-6 py-5 hover:bg-gray-50 gap-3 transition-colors">
                         <div className="text-sm font-mono text-gray-400 hidden md:block">#{u.id}</div>
                         <div className="flex justify-between items-start md:block">
-                          <div className="font-bold text-gray-900">{u.name}</div>
+                          <div className="font-bold text-gray-900">
+                            {u.name} {u.is_suspended ? <span className="text-red-500 ml-1 text-xs uppercase tracking-wider">(Suspended)</span> : null}
+                          </div>
                           <div className="text-xs font-mono text-gray-400 md:hidden">#{u.id}</div>
                         </div>
                         <div className="text-sm text-gray-600 truncate">{u.email}</div>
@@ -147,8 +168,17 @@ export default function AdminDashboard() {
                           </span>
                         </div>
                         <div className="mt-2 md:mt-0 md:text-right">
-                          <button className="flex items-center justify-center md:justify-end gap-1.5 text-red-600 bg-red-50 md:bg-transparent px-4 py-2 md:px-0 md:py-0 w-full md:w-auto rounded-lg text-sm font-bold hover:text-red-800 hover:bg-red-100 md:hover:bg-transparent transition-colors ml-auto">
-                            <ShieldAlert size={16} /> Suspend
+                          <button 
+                            onClick={() => handleSuspendToggle(u.id, u.is_suspended)}
+                            disabled={u.role === 'admin'}
+                            className={`flex items-center justify-center md:justify-end gap-1.5 px-4 py-2 md:px-0 md:py-0 w-full md:w-auto rounded-lg text-sm font-bold transition-colors ml-auto disabled:opacity-30 disabled:cursor-not-allowed ${
+                              u.is_suspended 
+                                ? "text-green-600 bg-green-50 md:bg-transparent hover:text-green-800 hover:bg-green-100 md:hover:bg-transparent" 
+                                : "text-red-600 bg-red-50 md:bg-transparent hover:text-red-800 hover:bg-red-100 md:hover:bg-transparent"
+                            }`}
+                          >
+                            <ShieldAlert size={16} /> 
+                            {u.is_suspended ? "Activate" : "Suspend"}
                           </button>
                         </div>
                       </div>

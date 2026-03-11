@@ -1,6 +1,5 @@
 import pool from "../config/db.js";
 
-// 1. Create a new booking request (🌟 NOW INCLUDES PRICE)
 export const insertBooking = async (
   customerId,
   providerId,
@@ -9,7 +8,7 @@ export const insertBooking = async (
   address,
   scheduledDate,
   notes,
-  price // <-- Added price argument
+  price 
 ) => {
   const query = `
     INSERT INTO bookings (customer_id, provider_id, category_id, phone_number, address, scheduled_date, notes, status, price) 
@@ -23,7 +22,7 @@ export const insertBooking = async (
     address,
     scheduledDate,
     notes,
-    price // <-- Added to the array
+    price 
   ]);
   return result.insertId;
 };

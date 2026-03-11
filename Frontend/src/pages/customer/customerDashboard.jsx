@@ -3,13 +3,13 @@ import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import { fetchMyBookings } from "../../redux/slices/bookingSlice";
 import LoadingSpinner from "../../components/common/loadingSpinner";
-import { 
-  Activity, 
-  CheckCircle, 
-  CalendarDays, 
-  MapPin, 
+import {
+  Activity,
+  CheckCircle,
+  CalendarDays,
+  MapPin,
   CalendarClock,
-  ArrowRight
+  ArrowRight,
 } from "lucide-react";
 
 export default function CustomerDashboard() {
@@ -58,15 +58,15 @@ export default function CustomerDashboard() {
     )
     .slice(0, 5);
 
-  // 🌟 3. Use the new Loading Spinner (fullScreen=false so it stays inside the dashboard container)
   if (isLoading) {
-    return <LoadingSpinner fullScreen={false} message="Loading your dashboard..." />;
+    return (
+      <LoadingSpinner fullScreen={false} message="Loading your dashboard..." />
+    );
   }
 
   return (
     // 🌟 Removed mt-20 to fix the massive layout shift!
     <div className="max-w-6xl mx-auto space-y-8 mt-4 pb-12">
-      
       {/* ========================================== */}
       {/* HEADER                                     */}
       {/* ========================================== */}
@@ -149,7 +149,9 @@ export default function CustomerDashboard() {
       {/* ========================================== */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
         <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-          <h2 className="text-lg font-extrabold text-gray-900">Recent Activity</h2>
+          <h2 className="text-lg font-extrabold text-gray-900">
+            Recent Activity
+          </h2>
           <Link
             to="/customer/bookings"
             className="text-sm font-bold text-blue-600 hover:text-blue-800 transition-colors flex items-center gap-1"
@@ -167,7 +169,8 @@ export default function CustomerDashboard() {
               No bookings yet
             </h3>
             <p className="text-gray-500 mb-6 max-w-sm">
-              You haven't requested any services. Ready to find an expert and get started?
+              You haven't requested any services. Ready to find an expert and
+              get started?
             </p>
             <Link
               to="/"
@@ -204,17 +207,23 @@ export default function CustomerDashboard() {
                       {booking.status}
                     </span>
                   </div>
-                  
+
                   {/* 🌟 Upgraded Text with Icons */}
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600 flex items-center gap-2">
                       <CalendarClock size={16} className="text-gray-400" />
-                      <span className="font-semibold text-gray-700">Scheduled:</span>{" "}
-                      {formatDate(booking.scheduledDate || booking.scheduled_date)}
+                      <span className="font-semibold text-gray-700">
+                        Scheduled:
+                      </span>{" "}
+                      {formatDate(
+                        booking.scheduledDate || booking.scheduled_date
+                      )}
                     </p>
                     <p className="text-sm text-gray-600 flex items-center gap-2 line-clamp-1">
                       <MapPin size={16} className="text-gray-400" />
-                      <span className="font-semibold text-gray-700">Address:</span>{" "}
+                      <span className="font-semibold text-gray-700">
+                        Address:
+                      </span>{" "}
                       {booking.address}
                     </p>
                   </div>

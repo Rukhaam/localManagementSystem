@@ -13,11 +13,12 @@ export const fetchCategories = createAsyncThunk(
   }
 );
 
+
 export const fetchActiveProviders = createAsyncThunk(
   "explore/fetchProviders",
-  async (categoryId, { rejectWithValue }) => {
+  async ({ categoryId = "", serviceArea = "" } = {}, { rejectWithValue }) => {
     try {
-      const response = await getActiveProvidersAPI(categoryId);
+      const response = await getActiveProvidersAPI(categoryId, serviceArea);
       return response.providers;
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Failed to load providers");

@@ -10,7 +10,6 @@ export const errorMiddleware = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.message = err.message || "Internal Server Error";
 
-  // 🌟 THE MAGIC LINE: Force Render to print the exact crash reason to the logs!
   console.error("🚨 CRITICAL ERROR CAUGHT:", err);
 
   if (err.code === 'ER_DUP_ENTRY') {
@@ -25,21 +24,18 @@ export const errorMiddleware = (err, req, res, next) => {
     err = new ErrorHandler(message, statusCode);
   }
 
-  // 3. Handle Invalid JWT error
   if (err.name === "JsonWebTokenError") {
     const message = "Json Web Token is invalid. Try again!";
     const statusCode = 400;
     err = new ErrorHandler(message, statusCode);
   }
 
-  // 4. Handle JWT Token Expired error
   if (err.name === "TokenExpiredError") {
     const message = "Json Web Token is expired. Try again!";
     const statusCode = 400;
     err = new ErrorHandler(message, statusCode);
   }
 
-  // Format error messages (handling potential validation arrays)
   const errorMessages = err.errors 
     ? Object.values(err.errors).map((e) => e.message).join(" ") 
     : err.message;

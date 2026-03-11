@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import dotenv from "dotenv";
 import { ErrorHandler } from "./errorMiddleware.js";
 import { catchAsyncErrors } from "./catchAsyncErrorMiddleware.js";
-import { getUserById } from "../models/userModel.js"; // Import your model!
+import { getUserById } from "../models/userModel.js";
 
 dotenv.config();
 

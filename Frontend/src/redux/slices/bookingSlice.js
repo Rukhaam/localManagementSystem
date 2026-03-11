@@ -87,7 +87,7 @@ export const requestBooking = createAsyncThunk(
 const bookingSlice = createSlice({
   name: "bookings",
   initialState: {
-    items: [], // 🌟 Using "items" to match your ManageJobs/MyBookings selectors
+    items: [],
     isLoading: false,
     error: null,
     successMessage: null,
@@ -157,7 +157,6 @@ const bookingSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🌟 Reschedule Booking (FIXED: Now points to state.items)
       .addCase(rescheduleBooking.pending, (state) => {
         state.isLoading = true;
         state.error = null;

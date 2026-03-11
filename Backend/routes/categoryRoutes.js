@@ -12,10 +12,8 @@ import {
 
 const router = express.Router();
 
-// Public route: Anyone can view categories
 router.get("/", getCategories);
 
-// Protected routes: Only logged-in Admins can create, update, or delete
 router.post("/", isAuthenticated, authorizeRoles("admin"), createCategory);
 router.put("/:id", isAuthenticated, authorizeRoles("admin"), updateCategory);
 router.delete("/:id", isAuthenticated, authorizeRoles("admin"), deleteCategory);
