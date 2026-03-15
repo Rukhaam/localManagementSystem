@@ -2,7 +2,7 @@ import api from './axiosConfig';
 
 // Fetch the provider's own profile
 export const getProviderProfileAPI = async () => {
-  const response = await api.get('/providers/profile');
+  const response = await api?.get('/providers/profile');
   return response.data;
 };
 
@@ -19,6 +19,6 @@ export const toggleAvailabilityAPI = async (isAvailable) => {
 };
 
 export const getCategoriesAPI = async () => {
-  const response = await api.get('/categories');
+  const response = await api?.get('/categories');
   return response.data;
 };

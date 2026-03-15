@@ -1,7 +1,7 @@
 import api from "./axiosConfig";
 
 export const getAllProvidersAdminAPI = async () => {
-  const response = await api.get("/providers/admin/all");
+  const response = await api?.get("/providers/admin/all");
   return response.data;
 };
 
@@ -23,12 +23,12 @@ export const deleteCategoryAPI = async (id) => {
   return response.data;
 };
 export const getAllUsersAPI = async () => {
-  const response = await api.get("/admin/users"); 
+  const response = await api?.get("/admin/users"); 
   return response.data;
 };
 
 export const getAllBookingsAPI = async () => {
-  const response = await api.get("/admin/bookings"); 
+  const response = await api?.get("/admin/bookings"); 
   return response.data;
 };
 export const toggleUserStatusAPI = async (userId, isSuspended) => {

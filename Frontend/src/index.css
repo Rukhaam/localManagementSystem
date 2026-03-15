@@ -12,7 +12,6 @@
   }
 }
 
-/* 🌟 Added Custom Animations Here */
 @layer utilities {
   @keyframes scroll {
     0% { transform: translateX(0); }

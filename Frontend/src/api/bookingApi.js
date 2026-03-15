@@ -1,7 +1,7 @@
 import api from "./axiosConfig";
 
 export const getMyBookingsAPI = async () => {
-  const response = await api.get("/bookings");
+  const response = await api?.get("/bookings");
   return response.data;
 };
 

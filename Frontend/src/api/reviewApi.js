@@ -8,6 +8,6 @@ export const createReviewAPI = async (reviewData) => {
 
 // Fetch reviews and stats for a specific provider
 export const getProviderReviewsAPI = async (providerId) => {
-  const response = await api.get(`/reviews/provider/${providerId}`);
+  const response = await api?.get(`/reviews/provider/${providerId}`);
   return response.data;
 };

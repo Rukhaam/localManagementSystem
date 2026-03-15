@@ -16,7 +16,7 @@ export const loginUserAPI = async (credentials) => {
 };
 
 export const logoutUserAPI = async () => {
-  const response = await api.get('/auth/logout');
+  const response = await api?.get('/auth/logout');
   return response.data;
 };
 
@@ -25,11 +25,11 @@ export const forgotPasswordAPI = async (email) => {
   return response.data;
 };
 export const checkAuthAPI = async () => {
-    const response = await api.get('/auth/me');
+    const response = await api?.get('/auth/me');
     return response.data;
   };
 export const logoutAPI = async () => {
-  const response = await api.get('/auth/logout'); 
+  const response = await api?.get('/auth/logout'); 
   return response.data;
 };export const resetPasswordAPI = async (data) => {
 

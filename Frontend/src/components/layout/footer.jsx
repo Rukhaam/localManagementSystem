@@ -118,13 +118,13 @@ export default function Footer() {
             &copy; {currentYear} LocalHub Inc. All rights reserved.
           </p>
           <div className="flex items-center space-x-6 text-sm font-medium text-gray-500">
-            <Link to="#" className="hover:text-gray-300 transition-colors">
+            <Link to="/" className="hover:text-gray-300 transition-colors">
               Privacy Policy
             </Link>
-            <Link to="#" className="hover:text-gray-300 transition-colors">
+            <Link to="/" className="hover:text-gray-300 transition-colors">
               Terms of Service
             </Link>
-            <Link to="#" className="hover:text-gray-300 transition-colors">
+            <Link to="/" className="hover:text-gray-300 transition-colors">
               Cookie Settings
             </Link>
           </div>

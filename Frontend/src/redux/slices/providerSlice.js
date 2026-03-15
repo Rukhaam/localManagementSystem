@@ -1,26 +1,27 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { 
-  getProviderProfileAPI, 
-  updateProviderProfileAPI, 
-  toggleAvailabilityAPI, 
-  getCategoriesAPI 
+import {
+  getProviderProfileAPI,
+  updateProviderProfileAPI,
+  toggleAvailabilityAPI,
+  getCategoriesAPI,
 } from "../../api/providerApi";
 
-// 1. ASYNC THUNKS
 export const fetchProviderData = createAsyncThunk(
   "provider/fetchData",
   async (_, { rejectWithValue }) => {
     try {
       const [profileRes, categoriesRes] = await Promise.all([
         getProviderProfileAPI(),
-        getCategoriesAPI()
+        getCategoriesAPI(),
       ]);
       return {
         profile: profileRes.profile,
-        categories: categoriesRes.categories
+        categories: categoriesRes.categories,
       };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to load profile data");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to load profile data"
+      );
     }
   }
 );
@@ -32,7 +33,9 @@ export const updateProfile = createAsyncThunk(
       const response = await updateProviderProfileAPI(profileData);
       return { profileData, message: response.message };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to update profile");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update profile"
+      );
     }
   }
 );
@@ -44,7 +47,9 @@ export const toggleAvailability = createAsyncThunk(
       const response = await toggleAvailabilityAPI(isAvailable);
       return { isAvailable, message: response.message };
     } catch (error) {
-      return rejectWithValue(error.response?.data?.message || "Failed to toggle status");
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to toggle status"
+      );
     }
   }
 );
@@ -63,7 +68,7 @@ const providerSlice = createSlice({
     clearProviderMessages: (state) => {
       state.error = null;
       state.successMessage = null;
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -80,7 +85,7 @@ const providerSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-      
+
       // Update Profile Cases
       .addCase(updateProfile.pending, (state) => {
         state.isLoading = true;
@@ -91,13 +96,11 @@ const providerSlice = createSlice({
         state.isLoading = false;
         state.successMessage = action.payload.message;
         if (!state.profile) state.profile = {};
-        
+
         state.profile.category_id = action.payload.profileData.categoryId;
         state.profile.bio = action.payload.profileData.bio;
-        state.profile.service_area = action.payload.profileData.serviceArea; 
-        
-        // 🌟 NEW: Sync the base price!
-        state.profile.base_price = action.payload.profileData.basePrice; 
+        state.profile.service_area = action.payload.profileData.serviceArea;
+        state.profile.base_price = action.payload.profileData.basePrice;
       })
       .addCase(updateProfile.rejected, (state, action) => {
         state.isLoading = false;
@@ -111,7 +114,7 @@ const providerSlice = createSlice({
           state.profile.is_available = action.payload.isAvailable ? 1 : 0;
         }
       });
-  }
+  },
 });
 
 export const { clearProviderMessages } = providerSlice.actions;

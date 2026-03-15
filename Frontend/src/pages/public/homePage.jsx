@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Link } from "react-router-dom";
 import {
@@ -10,6 +10,8 @@ import {
   ArrowRight,
   ShieldCheck,
   MapPin,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import {
   fetchCategories,
@@ -17,44 +19,75 @@ import {
   setSelectedCategory,
 } from "../../redux/slices/exploreSlice";
 
-import { featuresData } from "../../utils/homeData";
+import { featuresData, getCategoryImage } from "../../utils/homeData";
 import { faqs } from "../../utils/faqsData";
 import AsyncSelect from "react-select/async";
-
+import { getCategoryIcon } from "../../utils/marqueeData.jsx";
 let searchTimeout;
 
 export default function Home() {
   const dispatch = useDispatch();
+  const sliderRef = useRef(null);
 
-  const { categories, providers, pagination, selectedCategoryId, isLoading, error } =
-    useSelector((state) => state.explore);
+  const {
+    categories,
+    providers,
+    pagination,
+    selectedCategoryId,
+    isLoading,
+    error,
+  } = useSelector((state) => state.explore);
 
   const [activeFaq, setActiveFaq] = useState(null);
   const [searchArea, setSearchArea] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
   useEffect(() => {
     if (categories.length === 0) {
       dispatch(fetchCategories());
     }
-    
 
     if (providers.length === 0 && !selectedCategoryId && !searchArea) {
       dispatch(fetchActiveProviders({ page: 1 }));
     }
-  }, [dispatch, categories.length, providers.length, selectedCategoryId, searchArea]);
+  }, [
+    dispatch,
+    categories.length,
+    providers.length,
+    selectedCategoryId,
+    searchArea,
+  ]);
+
+  const handleSliderScroll = () => {
+    if (!sliderRef.current) return;
+    const scrollPosition = sliderRef.current.scrollLeft;
+    const itemWidth = sliderRef.current.firstChild.offsetWidth + 24;
+    const newIndex = Math.round(scrollPosition / itemWidth);
+    setActiveSlideIndex(newIndex);
+  };
+
+  const scrollSlider = (direction) => {
+    if (sliderRef.current) {
+      const itemWidth = sliderRef.current.firstChild.offsetWidth + 24;
+      sliderRef.current.scrollBy({
+        left: direction * itemWidth,
+        behavior: "smooth",
+      });
+    }
+  };
 
   const handleCategoryClick = (categoryId) => {
     const newCategoryId = selectedCategoryId === categoryId ? "" : categoryId;
     dispatch(setSelectedCategory(newCategoryId));
-    
+
     setCurrentPage(1);
 
     dispatch(
       fetchActiveProviders({
         categoryId: newCategoryId,
         serviceArea: searchArea,
-        page: 1 
+        page: 1,
       })
     );
 
@@ -68,12 +101,12 @@ export default function Home() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     setCurrentPage(1);
-    
+
     dispatch(
       fetchActiveProviders({
         categoryId: selectedCategoryId,
         serviceArea: searchArea,
-        page: 1 
+        page: 1,
       })
     );
 
@@ -85,14 +118,16 @@ export default function Home() {
   const handlePageChange = (newPage) => {
     setCurrentPage(newPage);
     dispatch(
-      fetchActiveProviders({ 
-        categoryId: selectedCategoryId, 
-        serviceArea: searchArea, 
-        page: newPage 
+      fetchActiveProviders({
+        categoryId: selectedCategoryId,
+        serviceArea: searchArea,
+        page: newPage,
       })
     );
-    
-    document.getElementById("providers-section")?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    document
+      .getElementById("providers-section")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
   const marqueeItems = [
@@ -238,27 +273,30 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 2. PURE CSS MARQUEE */}
-      <div className="relative bg-white overflow-hidden py-8 border-b border-gray-200 flex items-center">
+      {/* 2. PURE CSS MARQUEE WITH DYNAMIC SVGS */}
+      <div className="relative bg-white overflow-hidden py-10 border-b border-gray-200 flex items-center">
         <div className="absolute inset-y-0 left-0 w-32 bg-gradient-to-r from-white to-transparent z-10 pointer-events-none"></div>
         <div className="absolute inset-y-0 right-0 w-32 bg-gradient-to-l from-white to-transparent z-10 pointer-events-none"></div>
 
-        <div className="flex w-max animate-scroll hover:[animation-play-state:paused]">
+        <div className="flex w-max animate-scroll hover:[animation-play-state:paused] py-2">
           {categories.length > 0 ? (
             marqueeItems.map((cat, i) => (
-              <div
+              <button
                 key={i}
-                className="flex items-center mx-6 group cursor-default"
+                onClick={() => handleCategoryClick(cat.id)}
+                className="flex flex-col items-center justify-center mx-8 md:mx-12 group cursor-pointer focus:outline-none"
               >
-                <Zap className="w-5 h-5 text-gray-300 mr-3 group-hover:text-blue-500 transition-colors" />
-                <span className="text-gray-400 font-bold text-xl uppercase tracking-widest group-hover:text-gray-900 transition-colors">
+                <div className="p-4 rounded-2xl bg-gray-50 border border-gray-100 group-hover:bg-white group-hover:border-blue-100 group-hover:shadow-lg transition-all duration-300 mb-3">
+                  {getCategoryIcon(cat.name)}
+                </div>
+                <span className="text-gray-500 font-bold text-xs md:text-sm uppercase tracking-widest group-hover:text-gray-900 transition-colors">
                   {cat.name}
                 </span>
-              </div>
+              </button>
             ))
           ) : (
             <div className="flex items-center mx-8">
-              <span className="text-gray-300 font-bold text-xl uppercase tracking-widest">
+              <span className="text-gray-300 font-bold text-xl uppercase tracking-widest animate-pulse">
                 LOADING SERVICES...
               </span>
             </div>
@@ -299,71 +337,113 @@ export default function Home() {
           </div>
         </section>
 
-        {/* 4. VISUAL CATEGORIES GRID */}
-        <section className="bg-white border-y border-gray-200 py-24">
+        {/* 4. VISUAL CATEGORIES SLIDER W/ ARROWS & DOTS */}
+        <section className="bg-gray-50 border-y border-gray-200 py-24 overflow-hidden">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="text-center mb-16">
-              <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
-                Explore Services
-              </h2>
-              <p className="text-gray-500 max-w-2xl mx-auto text-lg">
-                Select a category below to filter our verified professionals.
-              </p>
+            <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6 relative z-10">
+              <div className="max-w-2xl">
+                <h2 className="text-3xl md:text-4xl font-extrabold text-gray-900 tracking-tight mb-4">
+                  Explore Services
+                </h2>
+                <p className="text-gray-500 text-lg">
+                  Swipe or use arrows to select a category and filter our
+                  verified professionals.
+                </p>
+              </div>
+
+              {/* 🌟 Desktop Arrow Buttons */}
+              <div className="hidden md:flex gap-3">
+                <button
+                  onClick={() => scrollSlider(-1)}
+                  className="p-4 rounded-full bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-200 hover:shadow-md transition-all"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={() => scrollSlider(1)}
+                  className="p-4 rounded-full bg-white border border-gray-200 shadow-sm text-gray-600 hover:text-blue-600 hover:border-blue-200 hover:shadow-md transition-all"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </div>
             </div>
 
-            {isLoading && categories.length === 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {[1, 2, 3, 4].map((n) => (
-                  <div
-                    key={n}
-                    className="bg-gray-100 rounded-2xl h-64 animate-pulse border border-gray-200"
-                  ></div>
-                ))}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {categories.map((category) => (
-                  <button
-                    key={category.id}
-                    onClick={() => handleCategoryClick(category.id)}
-                    className={`text-left group relative bg-white rounded-2xl shadow-sm border overflow-hidden hover:shadow-xl transition-all duration-300 hover:-translate-y-1 ${
-                      selectedCategoryId === category.id
-                        ? "ring-2 ring-blue-600 border-transparent shadow-md"
-                        : "border-gray-200"
-                    }`}
-                  >
-                    <div className="h-40 w-full bg-gray-100 overflow-hidden relative">
-                      <div className="absolute inset-0 bg-gray-900/10 group-hover:bg-transparent transition-colors z-10"></div>
-                      <img
-                        src={
-                          "https://img.freepik.com/premium-photo/male-hand-touching-service-concept_220873-7591.jpg"
-                        }
-                        alt={category.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out"
-                        onError={(e) => {
-                          e.target.src =
-                            "https://images.unsplash.com/photo-1542013936693-884638332954?auto=format&fit=crop&w=600&q=80";
-                        }}
-                      />
-                    </div>
-                    <div className="p-6">
-                      <h3 className="text-lg font-bold text-gray-900 mb-1">
-                        {category.name}
-                      </h3>
-                      <p className="text-sm text-gray-500 line-clamp-2 leading-relaxed">
-                        {category.description}
-                      </p>
-                    </div>
+            {/* The Horizontal Scrolling Slider */}
+            <div className="relative -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8">
+              {/* CSS classes applied to hide scrollbar while keeping scroll functionality */}
+              <div
+                ref={sliderRef}
+                onScroll={handleSliderScroll}
+                className="flex gap-6 overflow-x-auto snap-x snap-mandatory pb-8 pt-4 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-smooth"
+              >
+                {isLoading && categories.length === 0
+                  ? /* Loading Skeletons for Slider */
+                    [1, 2, 3, 4, 5].map((n) => (
+                      <div
+                        key={n}
+                        className="min-w-[280px] sm:min-w-[320px] h-[400px] shrink-0 snap-start bg-gray-200 rounded-3xl animate-pulse"
+                      ></div>
+                    ))
+                  : /* Actual Category Cards */
+                    categories.map((category) => (
+                      <button
+                        key={category.id}
+                        onClick={() => handleCategoryClick(category.id)}
+                        className={`text-left group relative min-w-[280px] sm:min-w-[320px] h-[400px] shrink-0 snap-start rounded-3xl overflow-hidden focus:outline-none transition-all duration-300 ${
+                          selectedCategoryId === category.id
+                            ? "ring-4 ring-blue-600 ring-offset-4 ring-offset-gray-50 scale-[1.02] shadow-2xl"
+                            : "hover:shadow-2xl hover:-translate-y-2 shadow-md border border-gray-200/50"
+                        }`}
+                      >
+                        {/* Dynamic Background Image */}
+                        <img
+                          src={getCategoryImage(category.name)}
+                          alt={category.name}
+                          className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110"
+                        />
 
-                    {selectedCategoryId === category.id && (
-                      <div className="absolute top-4 right-4 bg-white/90 backdrop-blur text-blue-600 p-1.5 rounded-full shadow-sm">
-                        <CheckCircle2 size={18} />
-                      </div>
-                    )}
-                  </button>
-                ))}
+                        {/* Dark Gradient Overlay for Text Readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-gray-900/40 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
+
+                        {/* Card Content (Bottom Aligned) */}
+                        <div className="absolute inset-0 p-8 flex flex-col justify-end">
+                          <h3 className="text-2xl font-extrabold text-white mb-2 group-hover:text-blue-300 transition-colors">
+                            {category.name}
+                          </h3>
+                          <p className="text-gray-200 text-sm line-clamp-2 font-medium leading-relaxed">
+                            {category.description}
+                          </p>
+                        </div>
+
+                        {/* Selected State Indicator */}
+                        {selectedCategoryId === category.id && (
+                          <div className="absolute top-6 right-6 bg-blue-600 text-white p-2 rounded-full shadow-lg animate-fade-in-up">
+                            <CheckCircle2 size={24} />
+                          </div>
+                        )}
+                      </button>
+                    ))}
+
+                {/* Spacer block to ensure the last item can scroll fully into view */}
+                <div className="min-w-[1px] shrink-0"></div>
               </div>
-            )}
+
+              {/* 🌟 The Dotted Bar (Pagination Indicators) */}
+              {!isLoading && categories.length > 0 && (
+                <div className="flex items-center justify-center gap-2 mt-4">
+                  {categories.map((_, index) => (
+                    <div
+                      key={index}
+                      className={`h-1.5 rounded-full transition-all duration-300 ease-out ${
+                        activeSlideIndex === index
+                          ? "w-8 bg-blue-600"
+                          : "w-2 bg-gray-300 hover:bg-gray-400"
+                      }`}
+                    ></div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </section>
 
@@ -439,7 +519,7 @@ export default function Home() {
                   <button
                     onClick={() => {
                       setSearchArea("");
-                      setCurrentPage(1); 
+                      setCurrentPage(1);
                       dispatch(
                         fetchActiveProviders({
                           categoryId: selectedCategoryId,
@@ -532,7 +612,11 @@ export default function Home() {
                   Previous
                 </button>
                 <span className="text-sm font-semibold text-gray-500">
-                  Page <span className="text-gray-900">{pagination.currentPage}</span> of {pagination.totalPages}
+                  Page{" "}
+                  <span className="text-gray-900">
+                    {pagination.currentPage}
+                  </span>{" "}
+                  of {pagination.totalPages}
                 </span>
                 <button
                   onClick={() => handlePageChange(currentPage + 1)}
@@ -543,7 +627,6 @@ export default function Home() {
                 </button>
               </div>
             )}
-            
           </div>
         </section>
       </main>

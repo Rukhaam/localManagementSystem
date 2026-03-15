@@ -70,7 +70,6 @@ export default function AdminDashboard() {
   const handleSuspendToggle = async (userId, currentStatus) => {
     const loadingId = showLoading(currentStatus ? "Reactivating user..." : "Suspending user...");
     
-    // Ensure we are passing a strict boolean to the Redux slice
     const res = await dispatch(toggleUserStatus({ userId, isSuspended: !currentStatus }));
     
     dismissToast(loadingId);

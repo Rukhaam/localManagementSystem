@@ -118,7 +118,7 @@ export default function Register() {
                   <label className="block text-sm font-semibold text-gray-700 mb-1.5">
                     Password
                   </label>
-                  {/* 🌟 Input with embedded Eye Icon */}
+            
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
