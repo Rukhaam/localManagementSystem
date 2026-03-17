@@ -29,31 +29,59 @@ import ApproveProviders from "./pages/admin/approveProviders";
 import ManageCategories from "./pages/admin/managerCategories";
 
 import ScrollToTop from "./hooks/scrollToTopHook";
-import LoadingSpinner from "./components/common/loadingSpinner";
-import { Toaster } from "react-hot-toast";
+import { Toaster, toast } from "react-hot-toast";
 
 function App() {
   const dispatch = useDispatch();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
+    let retryCount = 0;
+    let pollInterval;
+
     const verifySession = async () => {
       try {
         const response = await checkAuthAPI();
         dispatch(setCredentials(response.user));
-      } catch (error) {
-        dispatch(logout());
-      } finally {
         setIsCheckingAuth(false);
+
+        if (retryCount > 0) {
+          toast.success("Server is online! Refreshing data...", { id: 'server-wake' });
+          setTimeout(() => window.location.reload(), 1000);
+        }
+      } catch (error) {
+        if (!error.response || error.response.status >= 500) {
+          retryCount++;
+
+          if (retryCount > 15) {
+            toast.error("Server seems to be offline right now.", { id: 'server-wake' });
+            setIsCheckingAuth(false);
+            return;
+          }
+
+          if (retryCount === 1) {
+            toast.loading("Waking up secure server. This may take up to 50 seconds...", { id: 'server-wake' });
+          }
+
+          console.log(`Backend sleeping. Retrying in 5 seconds... (Attempt ${retryCount})`);
+          pollInterval = setTimeout(verifySession, 5000);
+        } else {
+          dispatch(logout());
+          setIsCheckingAuth(false);
+
+          if (retryCount > 0) {
+            toast.success("Server is online! Refreshing data...", { id: 'server-wake' });
+            setTimeout(() => window.location.reload(), 1000);
+          }
+        }
       }
     };
 
     verifySession();
-  }, [dispatch]);
 
-  if (isCheckingAuth) {
-    return <LoadingSpinner message="Loading your session..." />;
-  }
+    // Cleanup interval if the component unmounts
+    return () => clearTimeout(pollInterval);
+  }, [dispatch]);
 
   return (
     <BrowserRouter>
@@ -79,25 +107,23 @@ function App() {
           {/* Customer Routes */}
           <Route path="/customer/provider/:id" element={<ProviderProfile />} />
 
-          <Route element={<ProtectedRoute allowedRoles={["customer"]} />}>
+          {/* 🔒 Protected Customer Routes */}
+          <Route element={<ProtectedRoute isCheckingAuth={isCheckingAuth} allowedRoles={["customer"]} />}>
             <Route path="/customer/dashboard" element={<CustomerDashboard />} />
             <Route path="/customer/bookings" element={<MyBookings />} />
           </Route>
 
-          {/* Provider Routes */}
-          <Route element={<ProtectedRoute allowedRoles={["provider"]} />}>
+          {/* 🔒 Protected Provider Routes */}
+          <Route element={<ProtectedRoute isCheckingAuth={isCheckingAuth} allowedRoles={["provider"]} />}>
             <Route path="/provider/dashboard" element={<ProviderDashboard />} />
             <Route path="/provider/jobs" element={<ManageJobs />} />
             <Route path="/provider/profile" element={<EditProfile />} />
           </Route>
 
-          {/* Admin Routes */}
-          <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+          {/* 🔒 Protected Admin Routes */}
+          <Route element={<ProtectedRoute isCheckingAuth={isCheckingAuth} allowedRoles={["admin"]} />}>
             <Route path="/admin/dashboard" element={<AdminDashboard />} />
-            <Route
-              path="/admin/approve-providers"
-              element={<ApproveProviders />}
-            />
+            <Route path="/admin/approve-providers" element={<ApproveProviders />} />
             <Route path="/admin/categories" element={<ManageCategories />} />
           </Route>
 
@@ -105,10 +131,10 @@ function App() {
           <Route
             path="*"
             element={
-              <div className="p-8 text-2xl font-bold">404 - Page Not Found</div>
+              <div className="p-8 text-2xl font-bold text-center mt-20">404 - Page Not Found</div>
             }
           />
-        </Route> {/* End of MainLayout */}
+        </Route>
       </Routes>
     </BrowserRouter>
   );

@@ -58,3 +58,12 @@ export const getUserById = async (id) => {
   const [rows] = await pool.query(query, [id]);
   return rows[0];
 };
+
+export const deleteOldUnverifiedUsers = async () => {
+  const query = `
+    DELETE FROM users 
+    WHERE is_verified = 0 AND created_at < (NOW() - INTERVAL 1 DAY)
+  `;
+  const [result] = await pool.query(query);
+  return result;
+};

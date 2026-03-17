@@ -13,7 +13,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 
 import { errorMiddleware } from "./middlewares/errorMiddleware.js";
-
+import { startCronJobs } from "./utils/deleteUnverifiedUsers.js";
 dotenv.config();
 
 
@@ -64,7 +64,7 @@ app.get("/", (req, res) => {
 });
 
 app.use(errorMiddleware);
-
+startCronJobs();
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== "test") {
