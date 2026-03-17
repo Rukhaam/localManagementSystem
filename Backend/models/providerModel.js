@@ -34,7 +34,7 @@ export const approveProviderInDB = async (profileId, isApproved) => {
 
 
 // 6. Fetch all approved & available providers (WITH DYNAMIC FILTERS & PAGINATION)
-export const getAllApprovedProviders = async (categoryId = null, serviceArea = null, limit = 10, offset = 0) => {
+export const getAllApprovedProviders = async (categoryId = null, serviceArea = null, limit = 9, offset = 0) => {
   // 1. Build the base conditions that BOTH queries will share
   let baseQuery = `
     FROM provider_profiles p
@@ -46,18 +46,18 @@ export const getAllApprovedProviders = async (categoryId = null, serviceArea = n
 
   const params = [];
   
-  // 🌟 FIX: Apply the Category Filter dynamically to the SQL
+  // Apply Category Filter dynamically
   if (categoryId) {
     baseQuery += " AND p.category_id = ?";
     params.push(categoryId);
   }
   
+  // Apply Area Filter dynamically
   if (serviceArea) {
     baseQuery += " AND LOWER(p.service_area) LIKE LOWER(?)";
     params.push(`%${serviceArea}%`);
   }
 
-  // 2. Build the specific Data Query
   const dataQuery = `
     SELECT 
       p.id as profile_id, 
@@ -77,7 +77,7 @@ export const getAllApprovedProviders = async (categoryId = null, serviceArea = n
     LIMIT ? OFFSET ?
   `;
 
-  // 3. Build the specific Count Query
+  // 3. Build the specific Count Query (calculates total pages)
   const countQuery = `
     SELECT COUNT(DISTINCT p.id) as totalCount
     ${baseQuery}
@@ -94,6 +94,7 @@ export const getAllApprovedProviders = async (categoryId = null, serviceArea = n
     totalCount: countResult[0].totalCount
   };
 };
+
 export const getAllProvidersDB = async () => {
   const query = `
     SELECT 

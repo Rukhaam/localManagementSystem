@@ -8,7 +8,6 @@ import {
   updateBookingPriceAPI
 } from "../../api/bookingApi";
 
-// --- 1. ASYNC THUNKS ---
 
 export const fetchMyBookings = createAsyncThunk(
   "bookings/fetchMyBookings",
@@ -82,7 +81,6 @@ export const requestBooking = createAsyncThunk(
   }
 );
 
-// --- 2. THE SLICE ---
 
 const bookingSlice = createSlice({
   name: "bookings",
@@ -139,7 +137,6 @@ const bookingSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🌟 Update Price (FIXED: Now points to state.items)
       .addCase(updateBookingPrice.pending, (state) => {
         state.isLoading = true;
         state.error = null;

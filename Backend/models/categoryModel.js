@@ -12,7 +12,7 @@ export const fetchAllCategories = async () => {
   return rows;
 };
 
-export const fetchCategoryById = async (id) => {
+  export   const fetchCategoryById = async (id) => {
   const query = "SELECT * FROM categories WHERE id = ?";
   const [rows] = await pool.query(query, [id]);
   return rows[0];

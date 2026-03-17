@@ -98,7 +98,7 @@ export default function ManageJobs() {
     }
   };
 
-  // 🌟 NEW: Handle Price Update Submission
+
   const handlePriceUpdate = async (e) => {
     e.preventDefault();
     if (!newPrice || isNaN(newPrice) || newPrice <= 0) {

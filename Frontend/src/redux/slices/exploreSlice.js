@@ -13,13 +13,16 @@ export const fetchCategories = createAsyncThunk(
   }
 );
 
-
+// 🌟 Added page parameter and extract both providers and pagination
 export const fetchActiveProviders = createAsyncThunk(
   "explore/fetchProviders",
-  async ({ categoryId = "", serviceArea = "" } = {}, { rejectWithValue }) => {
+  async ({ categoryId = "", serviceArea = "", page = 1 } = {}, { rejectWithValue }) => {
     try {
-      const response = await getActiveProvidersAPI(categoryId, serviceArea);
-      return response.providers;
+      const response = await getActiveProvidersAPI(categoryId, serviceArea, page);
+      return { 
+        providers: response.providers, 
+        pagination: response.pagination // 🌟 Grab the pagination data
+      };
     } catch (error) {
       return rejectWithValue(error.response?.data?.message || "Failed to load providers");
     }
@@ -31,6 +34,7 @@ const exploreSlice = createSlice({
   initialState: {
     categories: [],
     providers: [],
+    pagination: null, 
     selectedCategoryId: "", 
     isLoading: false,
     error: null,
@@ -42,18 +46,17 @@ const exploreSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Categories
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categories = action.payload;
       })
-      // Providers
       .addCase(fetchActiveProviders.pending, (state) => {
         state.isLoading = true;
         state.error = null;
       })
       .addCase(fetchActiveProviders.fulfilled, (state, action) => {
         state.isLoading = false;
-        state.providers = action.payload;
+        state.providers = action.payload.providers;
+        state.pagination = action.payload.pagination; 
       })
       .addCase(fetchActiveProviders.rejected, (state, action) => {
         state.isLoading = false;

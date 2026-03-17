@@ -20,6 +20,7 @@ export default function ProviderProfile() {
   const { showSuccess, showError, showLoading, dismissToast } = useToast();
 
   const { user } = useSelector((state) => state.auth);
+  
 
   const { providers, isLoading: exploring } = useSelector(
     (state) => state.explore
@@ -65,7 +66,7 @@ export default function ProviderProfile() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     const bookingPayload = {
-      providerId: provider.user_id,
+      _providerId: provider.user_id,
       categoryId: provider.category_id,
       phoneNumber: formData.phoneNumber,
       address: formData.address,

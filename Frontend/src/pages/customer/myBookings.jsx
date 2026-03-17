@@ -4,7 +4,7 @@ import {
   fetchMyBookings,
   updateBookingStatus,
   clearBookingMessages,
-  rescheduleBooking, // 🌟 IMPORTED NEW THUNK
+  rescheduleBooking, 
 } from "../../redux/slices/bookingSlice";
 import {
   submitReview,

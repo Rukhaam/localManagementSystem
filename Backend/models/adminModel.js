@@ -3,7 +3,6 @@ import pool from "../config/db.js";
 
 class AdminModel {
   static async getAllUsers() {
-    // 🌟 FIX 1: Added is_suspended to the SELECT query so React gets the data on refresh!
     const query = `
       SELECT id, name, email, role, created_at, is_suspended 
       FROM users 

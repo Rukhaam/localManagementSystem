@@ -4,10 +4,10 @@ import { useNavigate, Link } from "react-router-dom";
 import { registerUserAPI, verifyOtpAPI } from "../../api/authApi";
 import { setCredentials } from "../../redux/slices/authSlice";
 import { useToast } from "../../hooks/toastHook";
+
 export default function Register() {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -20,21 +20,25 @@ export default function Register() {
 
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  // 🌟 Ensure we have showSuccess and showError
   const { showSuccess, showError } = useToast();
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     try {
       await registerUserAPI(formData);
+      // 🌟 Trigger a success popup so the user knows to check their email
+      showSuccess("Verification code sent to your email!"); 
       setStep(2);
     } catch (err) {
-      setError(
+      // 🌟 FIX: Actually call the showError popup instead of silently setting state
+      showError(
         err.response?.data?.message || "Registration failed. Try again."
       );
     } finally {
@@ -44,7 +48,6 @@ export default function Register() {
 
   const handleOtpSubmit = async (e) => {
     e.preventDefault();
-    setError(null);
     setIsLoading(true);
 
     try {
@@ -59,6 +62,7 @@ export default function Register() {
         navigate("/customer/dashboard");
       }
     } catch (err) {
+      // This one was already correct, but now it matches Step 1!
       showError(err.response?.data?.message || "Invalid OTP. Try again.");
     } finally {
       setIsLoading(false);
